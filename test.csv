@@ -1,0 +1,329 @@
+cat > app/page.tsx
+"use client";
+
+import { useState } from "react";
+
+export default function Home() {
+
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [fileName, setFileName] = useState("");
+
+  const [income, setIncome] = useState(0);
+  const [expenses, setExpenses] = useState(0);
+  const [remaining, setRemaining] = useState(0);
+
+  const [savingScore, setSavingScore] = useState(80);
+
+  const [categories, setCategories] = useState<any>({});
+
+  const detectCategory = (name: string) => {
+
+    const lower = name.toLowerCase();
+
+    if (
+      lower.includes("mcdonalds") ||
+      lower.includes("starbucks") ||
+      lower.includes("burger") ||
+      lower.includes("liefer")
+    ) {
+      return "Essen";
+    }
+
+    if (
+      lower.includes("netflix") ||
+      lower.includes("spotify") ||
+      lower.includes("prime")
+    ) {
+      return "Abos";
+    }
+
+    if (
+      lower.includes("amazon") ||
+      lower.includes("shopping") ||
+      lower.includes("zalando")
+    ) {
+      return "Shopping";
+    }
+
+    if (
+      lower.includes("gehalt") ||
+      lower.includes("salary")
+    ) {
+      return "Einkommen";
+    }
+
+    return "Sonstiges";
+
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setFileName(file.name);
+
+    const text = await file.text();
+
+    const rows = text.split("\n");
+
+    let parsedTransactions = [];
+
+    let incomeTotal = 0;
+    let expenseTotal = 0;
+
+    let categoryMap: any = {};
+
+    for (let i = 0; i < rows.length; i++) {
+
+      const cols = rows[i].split(",");
+
+      if (cols.length < 2) continue;
+
+      const name = cols[0].trim();
+
+      const amount = Number(cols[1]);
+
+      const category = detectCategory(name);
+
+      parsedTransactions.push({
+        name,
+        amount,
+        category
+      });
+
+      if (!categoryMap[category]) {
+        categoryMap[category] = 0;
+      }
+
+      categoryMap[category] += Math.abs(amount);
+
+      if (amount > 0) {
+        incomeTotal += amount;
+      } else {
+        expenseTotal += Math.abs(amount);
+      }
+
+    }
+
+    setTransactions(parsedTransactions);
+
+    setCategories(categoryMap);
+
+    setIncome(incomeTotal);
+
+    setExpenses(expenseTotal);
+
+    setRemaining(incomeTotal - expenseTotal);
+
+    const score =
+      Math.max(
+        40,
+        100 - Math.floor((expenseTotal / incomeTotal) * 100)
+      );
+
+    setSavingScore(score);
+
+  };
+
+  return (
+    <main className="min-h-screen bg-[#0B0F19] text-white p-6 md:p-10">
+
+      <div className="max-w-7xl mx-auto">
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+
+          <div>
+
+            <h1 className="text-5xl font-black text-emerald-400">
+              SaveWise AI
+            </h1>
+
+            <p className="text-gray-400 text-xl mt-4">
+              AI Finanzanalyse für deine Ausgaben
+            </p>
+
+          </div>
+
+          <label className="bg-emerald-400 text-black px-6 py-4 rounded-2xl font-bold cursor-pointer hover:scale-105 transition">
+
+            CSV Upload
+
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+
+          </label>
+
+        </div>
+
+        {fileName && (
+
+          <p className="text-emerald-400 mt-6 font-bold">
+            Hochgeladen: {fileName}
+          </p>
+
+        )}
+
+        <div className="grid md:grid-cols-4 gap-6 mt-12">
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <p className="text-gray-400">
+              Einkommen
+            </p>
+
+            <h2 className="text-5xl font-black text-emerald-400 mt-4">
+              {income.toFixed(2)}€
+            </h2>
+
+          </div>
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <p className="text-gray-400">
+              Ausgaben
+            </p>
+
+            <h2 className="text-5xl font-black text-red-400 mt-4">
+              {expenses.toFixed(2)}€
+            </h2>
+
+          </div>
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <p className="text-gray-400">
+              Übrig
+            </p>
+
+            <h2 className="text-5xl font-black text-yellow-400 mt-4">
+              {remaining.toFixed(2)}€
+            </h2>
+
+          </div>
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <p className="text-gray-400">
+              Sparscore
+            </p>
+
+            <h2 className="text-5xl font-black text-emerald-400 mt-4">
+              {savingScore}
+            </h2>
+
+            <div className="w-full bg-black/30 rounded-full h-3 mt-6">
+
+              <div
+                className="bg-emerald-400 h-3 rounded-full"
+                style={{ width: `${savingScore}%` }}
+              />
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6 mt-8">
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <h3 className="text-3xl font-bold">
+              Kategorien
+            </h3>
+
+            <div className="space-y-5 mt-8">
+
+              {Object.entries(categories).map(
+                ([category, amount]: any, index) => (
+
+                  <div
+                    key={index}
+                    className="bg-black/30 p-5 rounded-2xl"
+                  >
+
+                    <div className="flex justify-between">
+
+                      <p className="font-bold">
+                        {category}
+                      </p>
+
+                      <p className="text-emerald-400 font-bold">
+                        {amount.toFixed(2)}€
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+          <div className="bg-[#111827] p-8 rounded-3xl">
+
+            <h3 className="text-3xl font-bold">
+              Transaktionen
+            </h3>
+
+            <div className="space-y-4 mt-8">
+
+              {transactions.map((transaction, index) => (
+
+                <div
+                  key={index}
+                  className="bg-black/30 p-5 rounded-2xl"
+                >
+
+                  <div className="flex items-center justify-between">
+
+                    <div>
+
+                      <p className="font-bold">
+                        {transaction.name}
+                      </p>
+
+                      <p className="text-gray-500 text-sm mt-1">
+                        {transaction.category}
+                      </p>
+
+                    </div>
+
+                    <p
+                      className={
+                        transaction.amount > 0
+                          ? "text-emerald-400 font-black"
+                          : "text-red-400 font-black"
+                      }
+                    >
+                      {transaction.amount}€
+                    </p>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </main>
+  );
+}
