@@ -21,6 +21,8 @@ const defaultTransactions: Transaction[] = [
 export default function Page() {
   const [activeTab, setActiveTab] = useState("home");
   const [showSettings, setShowSettings] = useState(false);
+  const [showAppSplash, setShowAppSplash] = useState(true);
+  const [splashProgress, setSplashProgress] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState("");
@@ -41,6 +43,22 @@ const [isLightMode, setIsLightMode] = useState(false);
 const [savingGoal, setSavingGoal] = useState("");
 const [goalAmount, setGoalAmount] = useState(0);
 const [savedAmount, setSavedAmount] = useState(0);
+
+  useEffect(() => {
+    const splashTimer = setInterval(() => {
+      setSplashProgress((old) => {
+        if (old >= 100) {
+          clearInterval(splashTimer);
+          setTimeout(() => setShowAppSplash(false), 300);
+          return 100;
+        }
+
+        return old + 4;
+      });
+    }, 45);
+
+    return () => clearInterval(splashTimer);
+  }, []);
 
   useEffect(() => {
     const savedGoal = localStorage.getItem("savewise_goal_name");
@@ -317,7 +335,37 @@ ${smartTip}`;
   }
 
   return (
-    <main
+    <>
+      {showAppSplash && (
+        <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
+          <img
+            src="/savewise-icon.png"
+            alt="SaveWise AI"
+            className="w-36 h-36 rounded-[32px] shadow-2xl shadow-emerald-500/30"
+          />
+
+          <h1 className="mt-8 text-4xl font-black text-white tracking-wide">
+            SaveWise
+          </h1>
+
+          <p className="mt-2 text-emerald-300 font-bold tracking-widest text-sm">
+            AI FINANCE DASHBOARD
+          </p>
+
+          <div className="w-full max-w-xs h-3 bg-white/10 rounded-full mt-10 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full transition-all duration-300"
+              style={{ width: splashProgress + "%" }}
+            />
+          </div>
+
+          <p className="mt-4 text-gray-400 text-sm">
+            Lade Premium Dashboard...
+          </p>
+        </div>
+      )}
+
+      <main
   className={
     "min-h-screen p-6 pb-32 " +
     (isLightMode
@@ -779,6 +827,7 @@ ${smartTip}`;
         </button>
       </div>
     </main>
+    </>
   );
 }
 
