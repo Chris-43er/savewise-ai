@@ -27,8 +27,6 @@ export default function Page() {
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const [introStep, setIntroStep] = useState(0);
   const [onboardingStep, setOnboardingStep] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
@@ -358,14 +356,6 @@ ${smartTip}`;
   }, [showSettings, homeSection, activeTab]);
 
   useEffect(() => {
-    const introSeen = localStorage.getItem("savewise_intro_seen");
-
-    if (!introSeen) {
-      setTimeout(() => {
-        setShowIntro(true);
-      }, 900);
-    }
-
     const done = localStorage.getItem("savewise_onboarding_done");
     if (!done) {
       setShowOnboarding(true);
@@ -1068,77 +1058,6 @@ ${smartTip}`;
 
       </div>
 
-      
-      {showIntro && !showAppSplash && (
-        <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
-            <div className="text-7xl mb-6">
-              {["💸", "📊", "🎯", "🤖"][introStep]}
-            </div>
-
-            <h2 className="text-4xl font-black text-white">
-              {[
-                "Willkommen bei SaveWise AI",
-                "Finanzen verstehen",
-                "Sparziele erreichen",
-                "KI-Unterstützung nutzen"
-              ][introStep]}
-            </h2>
-
-            <p className="text-gray-400 mt-5 text-lg leading-relaxed">
-              {[
-                "SaveWise AI hilft dir, Budget, Ausgaben und Sparziele smarter zu verwalten.",
-                "Behalte Einnahmen, Ausgaben, Sparquote, Monatsbudget und Trends im Blick.",
-                "Lege Sparziele fest und verfolge deinen Fortschritt Schritt für Schritt.",
-                "Nutze KI-Empfehlungen, um Sparpotenziale zu erkennen und bessere Entscheidungen zu treffen."
-              ][introStep]}
-            </p>
-
-            <div className="flex justify-center gap-2 mt-8">
-              {[0,1,2,3].map((i) => (
-                <div
-                  key={i}
-                  className={
-                    "h-2 rounded-full transition-all " +
-                    (introStep === i ? "w-10 bg-emerald-400" : "w-2 bg-white/20")
-                  }
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-3 mt-10">
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.setItem("savewise_intro_seen", "true");
-                  setShowIntro(false);
-                  setIntroStep(0);
-                }}
-                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black"
-              >
-                Überspringen
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (introStep < 3) {
-                    setIntroStep(introStep + 1);
-                  } else {
-                    localStorage.setItem("savewise_intro_seen", "true");
-                    setShowIntro(false);
-                    setIntroStep(0);
-                  }
-                }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black"
-              >
-                {introStep < 3 ? "Weiter" : "Loslegen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-end md:items-center justify-center p-6">
           <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[28px] p-5 shadow-2xl">
@@ -1215,8 +1134,10 @@ ${smartTip}`;
               <button
                 type="button"
                 onClick={() => {
-                  setIntroStep(0);
-                  setShowIntro(true);
+                  localStorage.removeItem("savewise_onboarding_done");
+                  setOnboardingStep(0);
+                  setShowOnboarding(true);
+                  setShowSettings(false);
                 }}
                 className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
               >

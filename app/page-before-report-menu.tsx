@@ -22,13 +22,10 @@ export default function Page() {
   const [activeTab, setActiveTab] = useState("home");
   const [homeSection, setHomeSection] = useState("overview");
   const [analyseSection, setAnalyseSection] = useState("menu");
-  const [reportSection, setReportSection] = useState("menu");
   const [showSettings, setShowSettings] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const [introStep, setIntroStep] = useState(0);
   const [onboardingStep, setOnboardingStep] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
@@ -358,14 +355,6 @@ ${smartTip}`;
   }, [showSettings, homeSection, activeTab]);
 
   useEffect(() => {
-    const introSeen = localStorage.getItem("savewise_intro_seen");
-
-    if (!introSeen) {
-      setTimeout(() => {
-        setShowIntro(true);
-      }, 900);
-    }
-
     const done = localStorage.getItem("savewise_onboarding_done");
     if (!done) {
       setShowOnboarding(true);
@@ -468,7 +457,7 @@ ${smartTip}`;
   }
 >
       <div className="max-w-5xl mx-auto">
-        {homeSection === "overview" && activeTab === "home" && <Header />}
+        {homeSection === "overview" && activeTab !== "analyse" && <Header />}
 
         {activeTab === "home" && (
           <div className="space-y-8 mt-8">
@@ -942,202 +931,80 @@ ${smartTip}`;
 
         {activeTab === "report" && (
           <div className="space-y-8 mt-8">
+            <Panel isLightMode={isLightMode} title="Datei Upload">
+              <p className="text-gray-400 mt-4">
+                Lade deine Kontoauszüge als PDF oder CSV hoch.
+              </p>
 
-            {reportSection === "menu" && <Header />}
-            {reportSection === "menu" && (
-              <>
-                <div className="grid gap-4">
-                  {[
-                    {
-                      key: "upload",
-                      label: "Datei-Upload",
-                      text: "Kontoauszüge als PDF oder CSV hochladen und analysieren"
-                    },
-                    {
-                      key: "pdf",
-                      label: "PDF-Report",
-                      text: "Professionellen Finanzreport erstellen"
+              <label className="mt-6 flex items-center gap-3 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
+                <Upload size={20} />
+                Datei auswählen
+
+                <input
+                  type="file"
+                  accept=".pdf,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const fileName = file?.name || "";
+
+                    setUploadedFile(fileName);
+
+                    if (fileName.toLowerCase().endsWith(".pdf")) {
+                      setUploadStatus("PDF erkannt. Kontoauszug bereit für die Analyse.");
+                    } else if (fileName.toLowerCase().endsWith(".csv")) {
+                      setUploadStatus("CSV erkannt. Datei wird analysiert.");
+                      if (file) analyzeCsv(file);
+                    } else {
+                      setUploadStatus("Dateiformat erkannt.");
                     }
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setReportSection(item.key)}
-                      className="rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] bg-white/5 text-white border-white/10"
-                    >
-                      <p className="text-2xl font-black">{item.label}</p>
-                      <p className="mt-2 text-gray-400">{item.text}</p>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {reportSection !== "menu" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReportSection("menu");
-                    window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
-                >
-                  ← Zurück zum Report
-                </button>
-              </div>
-            )}
+                />
+              </label>
 
-            <div className={reportSection === "upload" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Datei-Upload">
-                <p className="text-gray-400 mt-4">
-                  Lade deine Kontoauszüge als PDF oder CSV hoch.
+              {uploadedFile && (
+                <p className="text-emerald-400 mt-4 font-bold break-words">
+                  Datei erkannt: {uploadedFile}
                 </p>
+              )}
 
-                <label className="mt-6 flex items-center gap-3 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
-                  <Upload size={20} />
-                  Datei auswählen
-
-                  <input
-                    type="file"
-                    accept=".pdf,.csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      const fileName = file?.name || "";
-
-                      setUploadedFile(fileName);
-
-                      if (fileName.toLowerCase().endsWith(".pdf")) {
-                        setUploadStatus("PDF erkannt. Kontoauszug bereit für die Analyse.");
-                      } else if (fileName.toLowerCase().endsWith(".csv")) {
-                        setUploadStatus("CSV erkannt. Datei wird analysiert.");
-                        if (file) analyzeCsv(file);
-                      } else {
-                        setUploadStatus("Dateiformat erkannt.");
-                      }
-                    }}
-                  />
-                </label>
-
-                {uploadedFile && (
-                  <p className="text-emerald-400 mt-4 font-bold break-words">
-                    Datei erkannt: {uploadedFile}
-                  </p>
-                )}
-
-                {uploadStatus && (
-                  <p className="text-cyan-400 mt-2 font-bold">
-                    {uploadStatus}
-                  </p>
-                )}
-
-                {uploadedFile && (
-                  <button
-                    onClick={startAnalysis}
-                    className="mt-6 bg-cyan-400 text-black px-6 py-4 rounded-2xl font-black"
-                  >
-                    Analyse starten
-                  </button>
-                )}
-
-                {analysisResult && (
-                  <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-gray-900 font-bold whitespace-pre-line">
-                    {analysisResult}
-                  </div>
-                )}
-              </Panel>
-            </div>
-
-            <div className={reportSection === "pdf" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="PDF-Report">
-                <p className="text-gray-400 mt-4">
-                  Erstelle einen professionellen Finanzreport.
+              {uploadStatus && (
+                <p className="text-cyan-400 mt-2 font-bold">
+                  {uploadStatus}
                 </p>
+              )}
 
+              {uploadedFile && (
                 <button
-                  onClick={createPdf}
-                  className="mt-6 bg-white text-black px-6 py-4 rounded-2xl font-black"
+                  onClick={startAnalysis}
+                  className="mt-6 bg-cyan-400 text-black px-6 py-4 rounded-2xl font-black"
                 >
-                  PDF erstellen
+                  Analyse starten
                 </button>
-              </Panel>
-            </div>
+              )}
+
+              {analysisResult && (
+                <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-gray-900 font-bold whitespace-pre-line">
+                  {analysisResult}
+                </div>
+              )}
+            </Panel>
+
+            <Panel isLightMode={isLightMode} title="PDF Report">
+              <p className="text-gray-400 mt-4">
+                Erstelle einen professionellen Finanzreport.
+              </p>
+
+              <button
+                onClick={createPdf}
+                className="mt-6 bg-white text-black px-6 py-4 rounded-2xl font-black"
+              >
+                PDF erstellen
+              </button>
+            </Panel>
           </div>
         )}
-
       </div>
-
-      
-      {showIntro && !showAppSplash && (
-        <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
-            <div className="text-7xl mb-6">
-              {["💸", "📊", "🎯", "🤖"][introStep]}
-            </div>
-
-            <h2 className="text-4xl font-black text-white">
-              {[
-                "Willkommen bei SaveWise AI",
-                "Finanzen verstehen",
-                "Sparziele erreichen",
-                "KI-Unterstützung nutzen"
-              ][introStep]}
-            </h2>
-
-            <p className="text-gray-400 mt-5 text-lg leading-relaxed">
-              {[
-                "SaveWise AI hilft dir, Budget, Ausgaben und Sparziele smarter zu verwalten.",
-                "Behalte Einnahmen, Ausgaben, Sparquote, Monatsbudget und Trends im Blick.",
-                "Lege Sparziele fest und verfolge deinen Fortschritt Schritt für Schritt.",
-                "Nutze KI-Empfehlungen, um Sparpotenziale zu erkennen und bessere Entscheidungen zu treffen."
-              ][introStep]}
-            </p>
-
-            <div className="flex justify-center gap-2 mt-8">
-              {[0,1,2,3].map((i) => (
-                <div
-                  key={i}
-                  className={
-                    "h-2 rounded-full transition-all " +
-                    (introStep === i ? "w-10 bg-emerald-400" : "w-2 bg-white/20")
-                  }
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-3 mt-10">
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.setItem("savewise_intro_seen", "true");
-                  setShowIntro(false);
-                  setIntroStep(0);
-                }}
-                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black"
-              >
-                Überspringen
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (introStep < 3) {
-                    setIntroStep(introStep + 1);
-                  } else {
-                    localStorage.setItem("savewise_intro_seen", "true");
-                    setShowIntro(false);
-                    setIntroStep(0);
-                  }
-                }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black"
-              >
-                {introStep < 3 ? "Weiter" : "Loslegen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-end md:items-center justify-center p-6">
@@ -1215,8 +1082,10 @@ ${smartTip}`;
               <button
                 type="button"
                 onClick={() => {
-                  setIntroStep(0);
-                  setShowIntro(true);
+                  localStorage.removeItem("savewise_onboarding_done");
+                  setOnboardingStep(0);
+                  setShowOnboarding(true);
+                  setShowSettings(false);
                 }}
                 className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
               >

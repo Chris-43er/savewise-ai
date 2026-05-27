@@ -21,14 +21,10 @@ const defaultTransactions: Transaction[] = [
 export default function Page() {
   const [activeTab, setActiveTab] = useState("home");
   const [homeSection, setHomeSection] = useState("overview");
-  const [analyseSection, setAnalyseSection] = useState("menu");
-  const [reportSection, setReportSection] = useState("menu");
   const [showSettings, setShowSettings] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showIntro, setShowIntro] = useState(false);
-  const [introStep, setIntroStep] = useState(0);
   const [onboardingStep, setOnboardingStep] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
@@ -358,14 +354,6 @@ ${smartTip}`;
   }, [showSettings, homeSection, activeTab]);
 
   useEffect(() => {
-    const introSeen = localStorage.getItem("savewise_intro_seen");
-
-    if (!introSeen) {
-      setTimeout(() => {
-        setShowIntro(true);
-      }, 900);
-    }
-
     const done = localStorage.getItem("savewise_onboarding_done");
     if (!done) {
       setShowOnboarding(true);
@@ -468,7 +456,7 @@ ${smartTip}`;
   }
 >
       <div className="max-w-5xl mx-auto">
-        {homeSection === "overview" && activeTab === "home" && <Header />}
+        {homeSection === "overview" && <Header />}
 
         {activeTab === "home" && (
           <div className="space-y-8 mt-8">
@@ -760,50 +748,7 @@ ${smartTip}`;
         )}
 
         {activeTab === "analyse" && (
-          <>
-            {analyseSection === "menu" && <Header />}
           <div className="space-y-8 mt-8">
-
-            {analyseSection === "menu" && (
-              <div className="grid gap-4">
-                {[
-                  { key: "assistant", label: "AI Finanzassistent", text: "Stelle Fragen zu deinen Finanzen" },
-                  { key: "tips", label: "AI Empfehlungen", text: "Smarte Spartipps und Hinweise" },
-                  { key: "trend", label: "Monats-Trend", text: "Entwicklung deiner Ausgaben" },
-                  { key: "distribution", label: "Ausgabenverteilung", text: "Kategorien visuell auswerten" },
-                  { key: "overview", label: "Monatsübersicht", text: "Wichtige Kennzahlen kompakt" },
-                  { key: "history", label: "Analyse Verlauf", text: "Bisherige Analysen ansehen" },
-                  { key: "transactions", label: "Letzte Transaktionen", text: "Aktuelle Buchungen prüfen" }
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setAnalyseSection(item.key)}
-                    className="rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] bg-white/5 text-white border-white/10"
-                  >
-                    <p className="text-2xl font-black">{item.label}</p>
-                    <p className="mt-2 text-gray-400">{item.text}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {analyseSection !== "menu" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAnalyseSection("menu");
-                    window.scrollTo({ top: 0, behavior: "auto" });
-                  }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
-                >
-                  ← Zurück zur Analyse
-                </button>
-              </div>
-            )}
-
-            <div className={analyseSection === "assistant" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Finanzassistent">
               <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 mt-6">
                 <p className="text-gray-900 whitespace-pre-line">{chatReply}</p>
@@ -825,9 +770,7 @@ ${smartTip}`;
                 </button>
               </div>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "tips" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Empfehlungen">
               <div className="space-y-4 mt-6">
                 <Info color="emerald" title="Sparchance erkannt" text="Reduziere Lieferdienste um 2 Bestellungen pro Woche." />
@@ -835,9 +778,7 @@ ${smartTip}`;
                 <Info color="yellow" title="Budget-Hinweis" text="Setze ein Wochenlimit für spontane Shopping-Ausgaben." />
               </div>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "trend" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monats-Trend">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -859,9 +800,7 @@ ${smartTip}`;
                 Deine Ausgaben sind diese Woche leicht gestiegen.
               </p>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "distribution" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Ausgabenverteilung">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -893,9 +832,7 @@ ${smartTip}`;
                 <p className="text-pink-400">● Transport 20%</p>
               </div>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "overview" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
               <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
                 <Mini title="Top Kategorie" value={topCategory} color="text-cyan-400" />
@@ -903,9 +840,7 @@ ${smartTip}`;
                 <Mini title="Transaktionen" value={String(transactions.length)} color="text-yellow-400" />
               </div>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "history" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Analyse Verlauf">
               <div className="space-y-4 mt-6">
                 {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-500"}>Noch keine Analysen vorhanden.</p>}
@@ -916,9 +851,7 @@ ${smartTip}`;
                 ))}
               </div>
             </Panel>
-            </div>
 
-            <div className={analyseSection === "transactions" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Letzte Transaktionen">
               <div className="space-y-4 mt-6">
                 {transactions.map((item, index) => (
@@ -935,209 +868,85 @@ ${smartTip}`;
                 ))}
               </div>
             </Panel>
-            </div>
           </div>
-          </>
         )}
 
         {activeTab === "report" && (
           <div className="space-y-8 mt-8">
+            <Panel isLightMode={isLightMode} title="Datei Upload">
+              <p className="text-gray-400 mt-4">
+                Lade deine Kontoauszüge als PDF oder CSV hoch.
+              </p>
 
-            {reportSection === "menu" && <Header />}
-            {reportSection === "menu" && (
-              <>
-                <div className="grid gap-4">
-                  {[
-                    {
-                      key: "upload",
-                      label: "Datei-Upload",
-                      text: "Kontoauszüge als PDF oder CSV hochladen und analysieren"
-                    },
-                    {
-                      key: "pdf",
-                      label: "PDF-Report",
-                      text: "Professionellen Finanzreport erstellen"
+              <label className="mt-6 flex items-center gap-3 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
+                <Upload size={20} />
+                Datei auswählen
+
+                <input
+                  type="file"
+                  accept=".pdf,.csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    const fileName = file?.name || "";
+
+                    setUploadedFile(fileName);
+
+                    if (fileName.toLowerCase().endsWith(".pdf")) {
+                      setUploadStatus("PDF erkannt. Kontoauszug bereit für die Analyse.");
+                    } else if (fileName.toLowerCase().endsWith(".csv")) {
+                      setUploadStatus("CSV erkannt. Datei wird analysiert.");
+                      if (file) analyzeCsv(file);
+                    } else {
+                      setUploadStatus("Dateiformat erkannt.");
                     }
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setReportSection(item.key)}
-                      className="rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] bg-white/5 text-white border-white/10"
-                    >
-                      <p className="text-2xl font-black">{item.label}</p>
-                      <p className="mt-2 text-gray-400">{item.text}</p>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {reportSection !== "menu" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReportSection("menu");
-                    window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
-                >
-                  ← Zurück zum Report
-                </button>
-              </div>
-            )}
+                />
+              </label>
 
-            <div className={reportSection === "upload" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Datei-Upload">
-                <p className="text-gray-400 mt-4">
-                  Lade deine Kontoauszüge als PDF oder CSV hoch.
+              {uploadedFile && (
+                <p className="text-emerald-400 mt-4 font-bold break-words">
+                  Datei erkannt: {uploadedFile}
                 </p>
+              )}
 
-                <label className="mt-6 flex items-center gap-3 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
-                  <Upload size={20} />
-                  Datei auswählen
-
-                  <input
-                    type="file"
-                    accept=".pdf,.csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      const fileName = file?.name || "";
-
-                      setUploadedFile(fileName);
-
-                      if (fileName.toLowerCase().endsWith(".pdf")) {
-                        setUploadStatus("PDF erkannt. Kontoauszug bereit für die Analyse.");
-                      } else if (fileName.toLowerCase().endsWith(".csv")) {
-                        setUploadStatus("CSV erkannt. Datei wird analysiert.");
-                        if (file) analyzeCsv(file);
-                      } else {
-                        setUploadStatus("Dateiformat erkannt.");
-                      }
-                    }}
-                  />
-                </label>
-
-                {uploadedFile && (
-                  <p className="text-emerald-400 mt-4 font-bold break-words">
-                    Datei erkannt: {uploadedFile}
-                  </p>
-                )}
-
-                {uploadStatus && (
-                  <p className="text-cyan-400 mt-2 font-bold">
-                    {uploadStatus}
-                  </p>
-                )}
-
-                {uploadedFile && (
-                  <button
-                    onClick={startAnalysis}
-                    className="mt-6 bg-cyan-400 text-black px-6 py-4 rounded-2xl font-black"
-                  >
-                    Analyse starten
-                  </button>
-                )}
-
-                {analysisResult && (
-                  <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-gray-900 font-bold whitespace-pre-line">
-                    {analysisResult}
-                  </div>
-                )}
-              </Panel>
-            </div>
-
-            <div className={reportSection === "pdf" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="PDF-Report">
-                <p className="text-gray-400 mt-4">
-                  Erstelle einen professionellen Finanzreport.
+              {uploadStatus && (
+                <p className="text-cyan-400 mt-2 font-bold">
+                  {uploadStatus}
                 </p>
+              )}
 
+              {uploadedFile && (
                 <button
-                  onClick={createPdf}
-                  className="mt-6 bg-white text-black px-6 py-4 rounded-2xl font-black"
+                  onClick={startAnalysis}
+                  className="mt-6 bg-cyan-400 text-black px-6 py-4 rounded-2xl font-black"
                 >
-                  PDF erstellen
+                  Analyse starten
                 </button>
-              </Panel>
-            </div>
+              )}
+
+              {analysisResult && (
+                <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-gray-900 font-bold whitespace-pre-line">
+                  {analysisResult}
+                </div>
+              )}
+            </Panel>
+
+            <Panel isLightMode={isLightMode} title="PDF Report">
+              <p className="text-gray-400 mt-4">
+                Erstelle einen professionellen Finanzreport.
+              </p>
+
+              <button
+                onClick={createPdf}
+                className="mt-6 bg-white text-black px-6 py-4 rounded-2xl font-black"
+              >
+                PDF erstellen
+              </button>
+            </Panel>
           </div>
         )}
-
       </div>
-
-      
-      {showIntro && !showAppSplash && (
-        <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
-            <div className="text-7xl mb-6">
-              {["💸", "📊", "🎯", "🤖"][introStep]}
-            </div>
-
-            <h2 className="text-4xl font-black text-white">
-              {[
-                "Willkommen bei SaveWise AI",
-                "Finanzen verstehen",
-                "Sparziele erreichen",
-                "KI-Unterstützung nutzen"
-              ][introStep]}
-            </h2>
-
-            <p className="text-gray-400 mt-5 text-lg leading-relaxed">
-              {[
-                "SaveWise AI hilft dir, Budget, Ausgaben und Sparziele smarter zu verwalten.",
-                "Behalte Einnahmen, Ausgaben, Sparquote, Monatsbudget und Trends im Blick.",
-                "Lege Sparziele fest und verfolge deinen Fortschritt Schritt für Schritt.",
-                "Nutze KI-Empfehlungen, um Sparpotenziale zu erkennen und bessere Entscheidungen zu treffen."
-              ][introStep]}
-            </p>
-
-            <div className="flex justify-center gap-2 mt-8">
-              {[0,1,2,3].map((i) => (
-                <div
-                  key={i}
-                  className={
-                    "h-2 rounded-full transition-all " +
-                    (introStep === i ? "w-10 bg-emerald-400" : "w-2 bg-white/20")
-                  }
-                />
-              ))}
-            </div>
-
-            <div className="flex gap-3 mt-10">
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.setItem("savewise_intro_seen", "true");
-                  setShowIntro(false);
-                  setIntroStep(0);
-                }}
-                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black"
-              >
-                Überspringen
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (introStep < 3) {
-                    setIntroStep(introStep + 1);
-                  } else {
-                    localStorage.setItem("savewise_intro_seen", "true");
-                    setShowIntro(false);
-                    setIntroStep(0);
-                  }
-                }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black"
-              >
-                {introStep < 3 ? "Weiter" : "Loslegen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showSettings && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-end md:items-center justify-center p-6">
@@ -1215,8 +1024,10 @@ ${smartTip}`;
               <button
                 type="button"
                 onClick={() => {
-                  setIntroStep(0);
-                  setShowIntro(true);
+                  localStorage.removeItem("savewise_onboarding_done");
+                  setOnboardingStep(0);
+                  setShowOnboarding(true);
+                  setShowSettings(false);
                 }}
                 className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
               >
