@@ -24,8 +24,6 @@ export default function Page() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState("");
@@ -352,32 +350,6 @@ ${smartTip}`;
       listener?.remove();
     };
   }, [showSettings, homeSection, activeTab]);
-
-  useEffect(() => {
-    const done = localStorage.getItem("savewise_onboarding_done");
-    if (!done) {
-      setShowOnboarding(true);
-    }
-  }, []);
-
-  const onboardingSlides = [
-    {
-      title: "Willkommen bei SaveWise AI",
-      text: "Dein intelligentes Premium-Finanzdashboard für Budget, Sparziele und KI-gestützte Finanzanalyse."
-    },
-    {
-      title: "Behalte alles im Blick",
-      text: "Analysiere Einnahmen, Ausgaben, Sparquote, Monatsbudget und Finanztrend in einer modernen App-Ansicht."
-    },
-    {
-      title: "Setze smarte Sparziele",
-      text: "Lege Ziele fest, verfolge deinen Fortschritt und erkenne sofort, wie viel dir noch fehlt."
-    },
-    {
-      title: "KI unterstützt dich",
-      text: "SaveWise AI gibt dir Spartipps, erkennt Risiken und hilft dir, bessere finanzielle Entscheidungen zu treffen."
-    }
-  ];
 
   function exportData() {
     const data = {
