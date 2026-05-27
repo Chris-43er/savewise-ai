@@ -1,7 +1,4 @@
-"use client"
-
-
-;
+"use client";
 
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
@@ -176,119 +173,134 @@ const [savedAmount, setSavedAmount] = useState(0);
   }
 
 
-  
-  
+  async function analyzePdf(file: File) {
+    try {
+      setUploadStatus("PDF wird ausgelesen...");
 
-async function analyzePdf(file: File) {
-  try {
-    setUploadStatus("PDF wird analysiert...");
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
 
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
+      const arrayBuffer = await file.arrayBuffer();
 
-    const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({
+        data: new Uint8Array(arrayBuffer),
+        disableWorker: false,
+        useWorkerFetch: false,
+        isEvalSupported: false
+      }).promise;
 
-    const pdf = await pdfjsLib.getDocument({
-      data: new Uint8Array(arrayBuffer),
-      disableWorker: false
-    }).promise;
+      let fullText = "";
 
-    let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
+        fullText += content.items
+          .map((item: any) => item.str)
+          .join(" ")
+          .replace(/\s+/g, " ") + "\n";
+      }
 
-      fullText += "\n" + content.items.map((item: any) => item.str).join(" ");
-    }
-
-    const normalized = fullText.replace(/\s+/g, " ");
-
-    function euroToNumber(value: string) {
-      return Math.abs(
-        Number(
+      function toNumber(value: string) {
+        return Number(
           value
             .replace(/\./g, "")
             .replace(",", ".")
             .replace(/[^0-9.-]/g, "")
-        )
+        );
+      }
+
+      function collectColumnAmounts(columnName: string) {
+        const amounts: number[] = [];
+        const lines = fullText.split("\n");
+
+        for (const line of lines) {
+          const lower = line.toLowerCase();
+
+          if (!lower.includes(columnName.toLowerCase())) continue;
+
+          const afterColumn = line.slice(
+            lower.indexOf(columnName.toLowerCase()) + columnName.length
+          );
+
+          const matches = afterColumn.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/g) || [];
+
+          for (const match of matches) {
+            const n = toNumber(match);
+            if (!isNaN(n) && n > 0) amounts.push(n);
+          }
+        }
+
+        return amounts;
+      }
+
+      let sollAmounts = collectColumnAmounts("Betrag Soll EUR");
+      let habenAmounts = collectColumnAmounts("Betrag Haben EUR");
+
+      if (sollAmounts.length === 0 || habenAmounts.length === 0) {
+        const normalized = fullText.replace(/\s+/g, " ");
+
+        const sollIndex = normalized.toLowerCase().indexOf("betrag soll eur");
+        const habenIndex = normalized.toLowerCase().indexOf("betrag haben eur");
+
+        if (sollIndex !== -1 && habenIndex !== -1) {
+          const afterColumns = normalized.slice(Math.min(sollIndex, habenIndex));
+
+          const numberMatches = afterColumns.match(/\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}/g) || [];
+
+          // Fallback: Bei vielen Kontoauszügen folgen Soll/Haben Beträge abwechselnd.
+          const parsed = numberMatches.map(toNumber).filter((n) => !isNaN(n) && n > 0);
+
+          if (sollAmounts.length === 0) {
+            sollAmounts = parsed.filter((_, index) => index % 2 === 0);
+          }
+
+          if (habenAmounts.length === 0) {
+            habenAmounts = parsed.filter((_, index) => index % 2 === 1);
+          }
+        }
+      }
+
+      const detectedExpenses = sollAmounts.reduce((sum, value) => sum + value, 0);
+      const detectedIncome = habenAmounts.reduce((sum, value) => sum + value, 0);
+
+      setMonthlyIncome(detectedIncome);
+      setIncomeInput(detectedIncome > 0 ? String(Math.round(detectedIncome * 100) / 100) : "");
+
+      setSpentThisMonth(detectedExpenses);
+      setExpenseInput(detectedExpenses > 0 ? String(Math.round(detectedExpenses * 100) / 100) : "");
+
+      setTransactions([
+        ...habenAmounts.map((amount, index) => ({
+          name: "Haben Buchung " + (index + 1),
+          amount,
+          category: "Einkommen"
+        })),
+        ...sollAmounts.map((amount, index) => ({
+          name: "Soll Buchung " + (index + 1),
+          amount: -amount,
+          category: "Ausgaben"
+        }))
+      ]);
+
+      setSavingScore(
+        detectedIncome > 0
+          ? Math.max(0, Math.min(100, Math.round(((detectedIncome - detectedExpenses) / detectedIncome) * 100)))
+          : 0
       );
-    }
 
-    let detectedExpenses = 0;
-    let detectedIncome = 0;
-
-    const totalMatch = normalized.match(
-      /Gesamtumsatzsummen[\s\S]*?(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+/
-    );
-
-    if (totalMatch) {
-      detectedExpenses = euroToNumber(totalMatch[1]);
-      detectedIncome = euroToNumber(totalMatch[2]);
-    }
-
-    if (detectedExpenses === 0 && detectedIncome === 0) {
-      const allAmounts = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-      const filtered = allAmounts.filter((raw) =>
-        !normalized.includes("Kontostand am " + raw) &&
-        raw !== "-1.483,02" &&
-        raw !== "-1.270,34"
+      setUploadStatus(
+        detectedIncome > 0 || detectedExpenses > 0
+          ? "PDF analysiert: Soll und Haben wurden erkannt."
+          : "PDF gelesen, aber Soll/Haben-Beträge wurden nicht erkannt. Bitte manuell eintragen."
       );
-
-      detectedExpenses = filtered
-        .filter((raw) => raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
-
-      detectedIncome = filtered
-        .filter((raw) => !raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
+    } catch (error) {
+      console.error("PDF Analyse Fehler:", error);
+      setUploadStatus("PDF-Fehler: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
     }
-
-    detectedExpenses = Math.round(detectedExpenses * 100) / 100;
-    detectedIncome = Math.round(detectedIncome * 100) / 100;
-
-    setMonthlyIncome(detectedIncome);
-    setIncomeInput(detectedIncome > 0 ? detectedIncome.toFixed(2) : "");
-
-    setSpentThisMonth(detectedExpenses);
-    setExpenseInput(detectedExpenses > 0 ? detectedExpenses.toFixed(2) : "");
-
-    setTransactions([
-      ...(detectedIncome > 0 ? [{
-        name: "PDF Einnahmen",
-        amount: detectedIncome,
-        category: "Einkommen"
-      }] : []),
-      ...(detectedExpenses > 0 ? [{
-        name: "PDF Ausgaben",
-        amount: -detectedExpenses,
-        category: "Ausgaben"
-      }] : [])
-    ]);
-
-    setSavingScore(
-      detectedIncome > 0
-        ? Math.max(0, Math.min(100, Math.round(((detectedIncome - detectedExpenses) / detectedIncome) * 100)))
-        : 0
-    );
-
-    setUploadStatus(
-      "PDF analysiert: Einnahmen " +
-      detectedIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€, Ausgaben " +
-      detectedExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€."
-    );
-  } catch (error) {
-    console.error("PDF Analyse Fehler:", error);
-    setUploadStatus("PDF konnte nicht analysiert werden. Bitte manuell eintragen.");
   }
-}
 
-function analyzeCsv(file: File) {
+  function analyzeCsv(file: File) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -605,9 +617,9 @@ ${smartTip}`;
           <div className="space-y-8 mt-8">
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-yellow-400" />
+              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+              <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
+              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth + "€" : "—"} color="text-yellow-400" />
               <Card title="Sparscore" value={transactions.length > 0 && savingScore > 0 ? savingScore + "/100" : "—"} color="text-cyan-400" />
               <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
@@ -704,8 +716,8 @@ ${smartTip}`;
               <div className={homeSection === "compare" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
-                  <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-                  <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
+                  <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+                  <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
                   <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
                 </div>
 

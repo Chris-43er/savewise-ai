@@ -1,7 +1,4 @@
-"use client"
-
-
-;
+"use client";
 
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
@@ -176,119 +173,86 @@ const [savedAmount, setSavedAmount] = useState(0);
   }
 
 
-  
-  
+  async function analyzePdf(file: File) {
+    try {
+      setUploadStatus("PDF wird ausgelesen...");
 
-async function analyzePdf(file: File) {
-  try {
-    setUploadStatus("PDF wird analysiert...");
+      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
 
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
+      const arrayBuffer = await file.arrayBuffer();
 
-    const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({
+        data: new Uint8Array(arrayBuffer),
+        disableWorker: false,
+        useWorkerFetch: false,
+        isEvalSupported: false
+      }).promise;
 
-    const pdf = await pdfjsLib.getDocument({
-      data: new Uint8Array(arrayBuffer),
-      disableWorker: false
-    }).promise;
+      let fullText = "";
 
-    let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += content.items.map((item: any) => item.str).join(" ") + "\n";
+      }
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
+      const amountMatches = fullText.match(/[-+]?\d{1,6}[,.]\d{2}/g) || [];
 
-      fullText += "\n" + content.items.map((item: any) => item.str).join(" ");
-    }
+      const amounts = amountMatches
+        .map((value) => Number(value.replace(".", "").replace(",", ".")))
+        .filter((value) => !isNaN(value));
 
-    const normalized = fullText.replace(/\s+/g, " ");
+      const incomeKeywords = ["gehalt", "lohn", "salary", "einkommen", "rente"];
+      const lowerText = fullText.toLowerCase();
 
-    function euroToNumber(value: string) {
-      return Math.abs(
-        Number(
-          value
-            .replace(/\./g, "")
-            .replace(",", ".")
-            .replace(/[^0-9.-]/g, "")
-        )
-      );
-    }
+      const positiveAmounts = amounts.filter((v) => v > 0);
+      const negativeAmounts = amounts.filter((v) => v < 0);
 
-    let detectedExpenses = 0;
-    let detectedIncome = 0;
+      const detectedIncome =
+        incomeKeywords.some((word) => lowerText.includes(word)) && positiveAmounts.length > 0
+          ? Math.max(...positiveAmounts)
+          : positiveAmounts.length > 0
+            ? Math.max(...positiveAmounts)
+            : 0;
 
-    const totalMatch = normalized.match(
-      /Gesamtumsatzsummen[\s\S]*?(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+/
-    );
-
-    if (totalMatch) {
-      detectedExpenses = euroToNumber(totalMatch[1]);
-      detectedIncome = euroToNumber(totalMatch[2]);
-    }
-
-    if (detectedExpenses === 0 && detectedIncome === 0) {
-      const allAmounts = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-      const filtered = allAmounts.filter((raw) =>
-        !normalized.includes("Kontostand am " + raw) &&
-        raw !== "-1.483,02" &&
-        raw !== "-1.270,34"
+      const detectedExpenses = Math.abs(
+        negativeAmounts.reduce((sum, value) => sum + value, 0)
       );
 
-      detectedExpenses = filtered
-        .filter((raw) => raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
+      setMonthlyIncome(detectedIncome);
+      setIncomeInput(detectedIncome > 0 ? String(detectedIncome) : "");
 
-      detectedIncome = filtered
-        .filter((raw) => !raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
+      setSpentThisMonth(detectedExpenses);
+      setExpenseInput(detectedExpenses > 0 ? String(detectedExpenses) : "");
+
+      setTransactions([
+        ...(detectedIncome > 0
+          ? [{ name: "Erkanntes Einkommen", amount: detectedIncome, category: "Einkommen" }]
+          : []),
+        ...(detectedExpenses > 0
+          ? [{ name: "Erkannte Ausgaben", amount: -detectedExpenses, category: "Ausgaben" }]
+          : [])
+      ]);
+
+      setSavingScore(
+        detectedIncome > 0
+          ? Math.max(0, Math.min(100, Math.round(((detectedIncome - detectedExpenses) / detectedIncome) * 100)))
+          : 0
+      );
+
+      setUploadStatus(
+        detectedIncome > 0 || detectedExpenses > 0
+          ? "PDF analysiert. Einkommen und Ausgaben wurden übernommen."
+          : "PDF wurde gelesen, aber keine Beträge erkannt. Bitte manuell eintragen."
+      );
+    } catch (error) {
+      console.error("PDF Analyse Fehler:", error);
+      setUploadStatus("PDF-Fehler: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
     }
-
-    detectedExpenses = Math.round(detectedExpenses * 100) / 100;
-    detectedIncome = Math.round(detectedIncome * 100) / 100;
-
-    setMonthlyIncome(detectedIncome);
-    setIncomeInput(detectedIncome > 0 ? detectedIncome.toFixed(2) : "");
-
-    setSpentThisMonth(detectedExpenses);
-    setExpenseInput(detectedExpenses > 0 ? detectedExpenses.toFixed(2) : "");
-
-    setTransactions([
-      ...(detectedIncome > 0 ? [{
-        name: "PDF Einnahmen",
-        amount: detectedIncome,
-        category: "Einkommen"
-      }] : []),
-      ...(detectedExpenses > 0 ? [{
-        name: "PDF Ausgaben",
-        amount: -detectedExpenses,
-        category: "Ausgaben"
-      }] : [])
-    ]);
-
-    setSavingScore(
-      detectedIncome > 0
-        ? Math.max(0, Math.min(100, Math.round(((detectedIncome - detectedExpenses) / detectedIncome) * 100)))
-        : 0
-    );
-
-    setUploadStatus(
-      "PDF analysiert: Einnahmen " +
-      detectedIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€, Ausgaben " +
-      detectedExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€."
-    );
-  } catch (error) {
-    console.error("PDF Analyse Fehler:", error);
-    setUploadStatus("PDF konnte nicht analysiert werden. Bitte manuell eintragen.");
   }
-}
 
-function analyzeCsv(file: File) {
+  function analyzeCsv(file: File) {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
@@ -605,9 +569,9 @@ ${smartTip}`;
           <div className="space-y-8 mt-8">
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-yellow-400" />
+              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+              <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
+              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth + "€" : "—"} color="text-yellow-400" />
               <Card title="Sparscore" value={transactions.length > 0 && savingScore > 0 ? savingScore + "/100" : "—"} color="text-cyan-400" />
               <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
@@ -704,8 +668,8 @@ ${smartTip}`;
               <div className={homeSection === "compare" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
-                  <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-                  <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
+                  <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+                  <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
                   <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
                 </div>
 

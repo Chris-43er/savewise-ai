@@ -1,7 +1,8 @@
 "use client"
 
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
-;
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";;
 
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
@@ -178,14 +179,8 @@ const [savedAmount, setSavedAmount] = useState(0);
 
   
   
-
 async function analyzePdf(file: File) {
   try {
-    setUploadStatus("PDF wird analysiert...");
-
-    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.mjs";
-
     const arrayBuffer = await file.arrayBuffer();
 
     const pdf = await pdfjsLib.getDocument({
@@ -199,94 +194,91 @@ async function analyzePdf(file: File) {
       const page = await pdf.getPage(pageNum);
       const content = await page.getTextContent();
 
-      fullText += "\n" + content.items.map((item: any) => item.str).join(" ");
+      const pageText = content.items
+        .map((item: any) => item.str)
+        .join(" ");
+
+      fullText += "\n" + pageText;
     }
 
-    const normalized = fullText.replace(/\s+/g, " ");
+    // Zahlenformat erkennen
+    const regex = /-?\d{1,3}(?:\.\d{3})*,\d{2}/g;
+    const matches = fullText.match(regex) || [];
 
-    function euroToNumber(value: string) {
-      return Math.abs(
-        Number(
-          value
-            .replace(/\./g, "")
-            .replace(",", ".")
-            .replace(/[^0-9.-]/g, "")
+    let income = 0;
+    let expenses = 0;
+
+    matches.forEach((raw) => {
+      const normalized = raw
+        .replace(/\./g, "")
+        .replace(",", ".");
+
+      const value = parseFloat(normalized);
+
+      if (isNaN(value)) return;
+
+      // unrealistische Werte ignorieren
+      if (Math.abs(value) > 20000) return;
+
+      // Kontostände ignorieren
+      if (
+        raw.includes("1.270,34") ||
+        raw.includes("1.483,02")
+      ) {
+        return;
+      }
+
+      if (value < 0) {
+        expenses += Math.abs(value);
+      } else {
+        income += value;
+      }
+    });
+
+    income = Math.round(income * 100) / 100;
+    expenses = Math.round(expenses * 100) / 100;
+
+    setMonthlyIncome(income);
+    setSpentThisMonth(expenses);
+
+    setTransactions([
+      {
+        name: "PDF Einnahmen",
+        amount: income,
+        category: "Einkommen"
+      },
+      {
+        name: "PDF Ausgaben",
+        amount: -expenses,
+        category: "Ausgaben"
+      }
+    ]);
+
+    if (income > 0) {
+      setSavingScore(
+        Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round(((income - expenses) / income) * 100)
+          )
         )
       );
     }
 
-    let detectedExpenses = 0;
-    let detectedIncome = 0;
-
-    const totalMatch = normalized.match(
-      /Gesamtumsatzsummen[\s\S]*?(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+\d+/
+    setUploadStatus(
+      "PDF erfolgreich analysiert. Einnahmen und Ausgaben wurden erkannt."
     );
 
-    if (totalMatch) {
-      detectedExpenses = euroToNumber(totalMatch[1]);
-      detectedIncome = euroToNumber(totalMatch[2]);
-    }
-
-    if (detectedExpenses === 0 && detectedIncome === 0) {
-      const allAmounts = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-      const filtered = allAmounts.filter((raw) =>
-        !normalized.includes("Kontostand am " + raw) &&
-        raw !== "-1.483,02" &&
-        raw !== "-1.270,34"
-      );
-
-      detectedExpenses = filtered
-        .filter((raw) => raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
-
-      detectedIncome = filtered
-        .filter((raw) => !raw.startsWith("-"))
-        .map(euroToNumber)
-        .reduce((a, b) => a + b, 0);
-    }
-
-    detectedExpenses = Math.round(detectedExpenses * 100) / 100;
-    detectedIncome = Math.round(detectedIncome * 100) / 100;
-
-    setMonthlyIncome(detectedIncome);
-    setIncomeInput(detectedIncome > 0 ? detectedIncome.toFixed(2) : "");
-
-    setSpentThisMonth(detectedExpenses);
-    setExpenseInput(detectedExpenses > 0 ? detectedExpenses.toFixed(2) : "");
-
-    setTransactions([
-      ...(detectedIncome > 0 ? [{
-        name: "PDF Einnahmen",
-        amount: detectedIncome,
-        category: "Einkommen"
-      }] : []),
-      ...(detectedExpenses > 0 ? [{
-        name: "PDF Ausgaben",
-        amount: -detectedExpenses,
-        category: "Ausgaben"
-      }] : [])
-    ]);
-
-    setSavingScore(
-      detectedIncome > 0
-        ? Math.max(0, Math.min(100, Math.round(((detectedIncome - detectedExpenses) / detectedIncome) * 100)))
-        : 0
-    );
+  } catch (err) {
+    console.error(err);
 
     setUploadStatus(
-      "PDF analysiert: Einnahmen " +
-      detectedIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€, Ausgaben " +
-      detectedExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      "€."
+      "PDF konnte nicht automatisch gelesen werden. Bitte Werte manuell eintragen."
     );
-  } catch (error) {
-    console.error("PDF Analyse Fehler:", error);
-    setUploadStatus("PDF konnte nicht analysiert werden. Bitte manuell eintragen.");
   }
 }
+
 
 function analyzeCsv(file: File) {
     Papa.parse(file, {
