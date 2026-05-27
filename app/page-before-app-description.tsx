@@ -999,41 +999,6 @@ ${smartTip}`;
   SaveWise AI MVP · Lokale Demo-Version
 </div>
 
-              
-              <div className="bg-gray-100 rounded-3xl p-6 text-gray-800">
-                <h3 className="text-2xl font-black mb-3">
-                  Was kann SaveWise AI?
-                </h3>
-
-                <p className="text-gray-600 leading-relaxed">
-                  SaveWise AI hilft dir, deine Finanzen besser zu verstehen,
-                  Budgets zu kontrollieren, Sparziele zu verfolgen und deine
-                  Ausgaben mit KI-gestützten Empfehlungen zu optimieren.
-                </p>
-
-                <div className="grid gap-2 mt-5 text-sm font-bold text-gray-700">
-                  <p>✅ Monatsbudget & Ausgabenlimit</p>
-                  <p>✅ Sparziele mit Fortschritt</p>
-                  <p>✅ Finanztrend & Diagramme</p>
-                  <p>✅ KI-Finanzassistent</p>
-                  <p>✅ Backup Export</p>
-                  <p>✅ Premium Android-App Erlebnis</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.removeItem("savewise_onboarding_done");
-                  setOnboardingStep(0);
-                  setShowOnboarding(true);
-                  setShowSettings(false);
-                }}
-                className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
-              >
-                Einführung erneut ansehen
-              </button>
-
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
