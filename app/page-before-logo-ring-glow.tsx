@@ -50,13 +50,13 @@ const [savedAmount, setSavedAmount] = useState(0);
       setSplashProgress((old) => {
         if (old >= 100) {
           clearInterval(splashTimer);
-          setTimeout(() => setShowAppSplash(false), 50);
+          setTimeout(() => setShowAppSplash(false), 120);
           return 100;
         }
 
-        return old + 20;
+        return old + 8;
       });
-    }, 15);
+    }, 25);
 
     return () => clearInterval(splashTimer);
   }, []);
@@ -339,28 +339,11 @@ ${smartTip}`;
     <>
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
-          <div className="relative w-44 h-44 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin shadow-lg shadow-emerald-400/40" />
-
-            <img
-              src="/savewise-icon.png"
-              alt="SaveWise AI"
-              className="w-36 h-36 rounded-[32px] transition-all duration-500"
-              style={{
-                opacity: 1,
-                filter:
-                  splashProgress >= 100
-                    ? "brightness(1.2) drop-shadow(0 0 36px rgba(16,185,129,0.9))"
-                    : "brightness(1) drop-shadow(0 0 16px rgba(16,185,129,0.35))",
-                transform:
-                  splashProgress >= 100
-                    ? "scale(1.06)"
-                    : "scale(1)"
-              }}
-            />
-          </div>
+          <img
+            src="/savewise-icon.png"
+            alt="SaveWise AI"
+            className="w-36 h-36 rounded-[32px] shadow-2xl shadow-emerald-500/30"
+          />
 
           <h1 className="mt-8 text-4xl font-black text-white tracking-wide">
             SaveWise
@@ -370,7 +353,15 @@ ${smartTip}`;
             AI FINANCE DASHBOARD
           </p>
 
-
+          <div className="relative mt-10 w-32 h-32 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+            <div
+              className="absolute inset-0 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin"
+            />
+            <p className="text-emerald-300 font-black">
+              {splashProgress}%
+            </p>
+          </div>
 
           <p className="mt-4 text-gray-400 text-sm">
             Lade Premium Dashboard...

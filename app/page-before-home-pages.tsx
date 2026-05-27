@@ -50,13 +50,13 @@ const [savedAmount, setSavedAmount] = useState(0);
       setSplashProgress((old) => {
         if (old >= 100) {
           clearInterval(splashTimer);
-          setTimeout(() => setShowAppSplash(false), 50);
+          setTimeout(() => setShowAppSplash(false), 300);
           return 100;
         }
 
-        return old + 20;
+        return old + 4;
       });
-    }, 15);
+    }, 45);
 
     return () => clearInterval(splashTimer);
   }, []);
@@ -339,28 +339,11 @@ ${smartTip}`;
     <>
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
-          <div className="relative w-44 h-44 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin shadow-lg shadow-emerald-400/40" />
-
-            <img
-              src="/savewise-icon.png"
-              alt="SaveWise AI"
-              className="w-36 h-36 rounded-[32px] transition-all duration-500"
-              style={{
-                opacity: 1,
-                filter:
-                  splashProgress >= 100
-                    ? "brightness(1.2) drop-shadow(0 0 36px rgba(16,185,129,0.9))"
-                    : "brightness(1) drop-shadow(0 0 16px rgba(16,185,129,0.35))",
-                transform:
-                  splashProgress >= 100
-                    ? "scale(1.06)"
-                    : "scale(1)"
-              }}
-            />
-          </div>
+          <img
+            src="/savewise-icon.png"
+            alt="SaveWise AI"
+            className="w-36 h-36 rounded-[32px] shadow-2xl shadow-emerald-500/30"
+          />
 
           <h1 className="mt-8 text-4xl font-black text-white tracking-wide">
             SaveWise
@@ -370,7 +353,12 @@ ${smartTip}`;
             AI FINANCE DASHBOARD
           </p>
 
-
+          <div className="w-full max-w-xs h-3 bg-white/10 rounded-full mt-10 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full transition-all duration-300"
+              style={{ width: splashProgress + "%" }}
+            />
+          </div>
 
           <p className="mt-4 text-gray-400 text-sm">
             Lade Premium Dashboard...
@@ -387,7 +375,7 @@ ${smartTip}`;
   }
 >
       <div className="max-w-5xl mx-auto">
-        {homeSection === "overview" && <Header />}
+        <Header />
 
         {activeTab === "home" && (
           <div className="space-y-8 mt-8">
@@ -403,7 +391,7 @@ ${smartTip}`;
 
 
             {homeSection === "overview" && (
-<div id="home-menu" className="grid gap-4">
+<div className="grid gap-4">
   {[
     {
       key: "overview",
@@ -433,16 +421,7 @@ ${smartTip}`;
   ].map((item) => (
     <button
       key={item.key}
-      onClick={() => {
-                    setHomeSection(item.key);
-                    setTimeout(() => {
-                      const menu = document.getElementById("home-menu");
-                      if (menu) {
-                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
-                        window.scrollTo({ top: y, behavior: "auto" });
-                      }
-                    }, 50);
-                  }}
+      onClick={() => setHomeSection(item.key)}
       className={
         "rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] " +
         (homeSection === item.key
@@ -467,27 +446,16 @@ ${smartTip}`;
 )}
 
             {homeSection !== "overview" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHomeSection("overview");
-                    setTimeout(() => {
-                      const menu = document.getElementById("home-menu");
-                      if (menu) {
-                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
-                        window.scrollTo({ top: y, behavior: "auto" });
-                      }
-                    }, 50);
-                  }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
-                >
-                  ← Zurück zur Übersicht
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setHomeSection("overview")}
+                className="bg-white/10 text-white rounded-2xl px-5 py-3 font-black w-fit"
+              >
+                ← Zurück zur Übersicht
+              </button>
             )}
 
-            <div className={homeSection === "overview" ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 pt-28"}>
+            <div className="grid grid-cols-1 gap-4">
 
               <div className={homeSection === "compare" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsvergleich">

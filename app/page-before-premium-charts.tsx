@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import Papa from "papaparse";
 import { Home, BarChart3, FileText, Upload, Settings } from "lucide-react";
-import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
 type Transaction = {
   name: string;
@@ -20,7 +20,6 @@ const defaultTransactions: Transaction[] = [
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState("home");
-  const [homeSection, setHomeSection] = useState("overview");
   const [showSettings, setShowSettings] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
@@ -50,13 +49,13 @@ const [savedAmount, setSavedAmount] = useState(0);
       setSplashProgress((old) => {
         if (old >= 100) {
           clearInterval(splashTimer);
-          setTimeout(() => setShowAppSplash(false), 50);
+          setTimeout(() => setShowAppSplash(false), 300);
           return 100;
         }
 
-        return old + 20;
+        return old + 4;
       });
-    }, 15);
+    }, 45);
 
     return () => clearInterval(splashTimer);
   }, []);
@@ -339,28 +338,11 @@ ${smartTip}`;
     <>
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
-          <div className="relative w-44 h-44 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
-
-            <div className="absolute inset-0 rounded-full border-4 border-emerald-400 border-t-transparent animate-spin shadow-lg shadow-emerald-400/40" />
-
-            <img
-              src="/savewise-icon.png"
-              alt="SaveWise AI"
-              className="w-36 h-36 rounded-[32px] transition-all duration-500"
-              style={{
-                opacity: 1,
-                filter:
-                  splashProgress >= 100
-                    ? "brightness(1.2) drop-shadow(0 0 36px rgba(16,185,129,0.9))"
-                    : "brightness(1) drop-shadow(0 0 16px rgba(16,185,129,0.35))",
-                transform:
-                  splashProgress >= 100
-                    ? "scale(1.06)"
-                    : "scale(1)"
-              }}
-            />
-          </div>
+          <img
+            src="/savewise-icon.png"
+            alt="SaveWise AI"
+            className="w-36 h-36 rounded-[32px] shadow-2xl shadow-emerald-500/30"
+          />
 
           <h1 className="mt-8 text-4xl font-black text-white tracking-wide">
             SaveWise
@@ -370,7 +352,12 @@ ${smartTip}`;
             AI FINANCE DASHBOARD
           </p>
 
-
+          <div className="w-full max-w-xs h-3 bg-white/10 rounded-full mt-10 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full transition-all duration-300"
+              style={{ width: splashProgress + "%" }}
+            />
+          </div>
 
           <p className="mt-4 text-gray-400 text-sm">
             Lade Premium Dashboard...
@@ -387,11 +374,10 @@ ${smartTip}`;
   }
 >
       <div className="max-w-5xl mx-auto">
-        {homeSection === "overview" && <Header />}
+        <Header />
 
         {activeTab === "home" && (
           <div className="space-y-8 mt-8">
-            {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card title="Einkommen" value="3200€" color="text-emerald-400" />
               <Card title="Ausgaben" value={spentThisMonth + "€"} color="text-red-400" />
@@ -399,97 +385,8 @@ ${smartTip}`;
               <Card title="Sparscore" value={savingScore + "/100"} color="text-cyan-400" />
               <Card title="Sparquote" value={Math.max(0, Math.round(((3200 - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
             </div>
-            )}
 
-
-            {homeSection === "overview" && (
-<div id="home-menu" className="grid gap-4">
-  {[
-    {
-      key: "overview",
-      label: "Übersicht",
-      text: "Alle wichtigen Finanzdaten auf einen Blick"
-    },
-    {
-      key: "compare",
-      label: "Monatsvergleich",
-      text: "Vergleiche Einnahmen, Ausgaben und Sparquote"
-    },
-    {
-      key: "goal",
-      label: "Sparziel",
-      text: "Verfolge dein aktuelles Sparziel"
-    },
-    {
-      key: "budget",
-      label: "Monatsbudget",
-      text: "Kontrolliere dein monatliches Ausgabenlimit"
-    },
-    {
-      key: "trend",
-      label: "Finanztrend",
-      text: "Analysiere deine finanzielle Entwicklung"
-    }
-  ].map((item) => (
-    <button
-      key={item.key}
-      onClick={() => {
-                    setHomeSection(item.key);
-                    setTimeout(() => {
-                      const menu = document.getElementById("home-menu");
-                      if (menu) {
-                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
-                        window.scrollTo({ top: y, behavior: "auto" });
-                      }
-                    }, 50);
-                  }}
-      className={
-        "rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] " +
-        (homeSection === item.key
-          ? "bg-emerald-400 text-black border-emerald-300 shadow-2xl shadow-emerald-400/20"
-          : "bg-white/5 text-white border-white/10")
-      }
-    >
-      <p className="text-2xl font-black">
-        {item.label}
-      </p>
-
-      <p className={
-        homeSection === item.key
-          ? "mt-2 text-black/70"
-          : "mt-2 text-gray-400"
-      }>
-        {item.text}
-      </p>
-    </button>
-  ))}
-</div>
-)}
-
-            {homeSection !== "overview" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHomeSection("overview");
-                    setTimeout(() => {
-                      const menu = document.getElementById("home-menu");
-                      if (menu) {
-                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
-                        window.scrollTo({ top: y, behavior: "auto" });
-                      }
-                    }, 50);
-                  }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
-                >
-                  ← Zurück zur Übersicht
-                </button>
-              </div>
-            )}
-
-            <div className={homeSection === "overview" ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 pt-28"}>
-
-              <div className={homeSection === "compare" ? "block" : "hidden"}>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
                   <Mini title="Einnahmen" value="3200€" color="text-emerald-400" />
@@ -511,9 +408,7 @@ ${smartTip}`;
                   </p>
                 </div>
               </Panel>
-              </div>
 
-<div className={homeSection === "goal" ? "block" : "hidden"}>
 <Panel isLightMode={isLightMode} title="Sparziel">
   <div className="grid gap-5 mt-6">
     <div>
@@ -575,8 +470,6 @@ ${smartTip}`;
     />
   </div>
 </Panel>
-</div>
-              <div className={homeSection === "budget" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsbudget">
                 <div className="flex gap-3 mt-6">
                   <input
@@ -631,39 +524,10 @@ ${smartTip}`;
                   <BudgetNote color="emerald" title="✅ Budget im grünen Bereich" text="Deine Ausgaben liegen aktuell im sicheren Bereich." />
                 )}
               </Panel>
-              </div>
 
 
             </div>
 
-            
-            <div className={homeSection === "trend" ? "block" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Finanztrend">
-              <div className="h-72 mt-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { name: "Jan", ausgaben: 980, sparen: 420 },
-                      { name: "Feb", ausgaben: 1120, sparen: 360 },
-                      { name: "Mär", ausgaben: 870, sparen: 520 },
-                      { name: "Apr", ausgaben: spentThisMonth, sparen: Math.max(0, 3200 - spentThisMonth) }
-                    ]}
-                  >
-                    <XAxis dataKey="name" />
-                    <Tooltip />
-                    <Bar dataKey="ausgaben" radius={[12, 12, 0, 0]} />
-                    <Bar dataKey="sparen" radius={[12, 12, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <p className="text-gray-600 mt-4">
-                Deine aktuelle Finanzentwicklung wird automatisch mit deinem Monatsbudget verglichen.
-              </p>
-            </Panel>
-            </div>
-
-            <div className={homeSection === "overview" ? "block" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Sparscore Analyse">
               <div className="flex justify-center mt-8">
                 <div className="w-48 h-48 rounded-full border-[18px] border-emerald-400 flex items-center justify-center shadow-2xl shadow-emerald-400/30">
@@ -674,7 +538,6 @@ ${smartTip}`;
                 </div>
               </div>
             </Panel>
-            </div>
           </div>
         )}
 
