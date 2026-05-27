@@ -310,6 +310,47 @@ ${smartTip}`;
     setShowSettings(false);
   }
 
+
+  useEffect(() => {
+    let listener: { remove: () => void } | undefined;
+
+    import("@capacitor/app").then(({ App }) => {
+      App.addListener("backButton", () => {
+        if (showSettings) {
+          setShowSettings(false);
+          return;
+        }
+
+        if (homeSection !== "overview") {
+          setHomeSection("overview");
+
+          setTimeout(() => {
+            const menu = document.getElementById("home-menu");
+            if (menu) {
+              const y = menu.getBoundingClientRect().top + window.scrollY - 10;
+              window.scrollTo({ top: y, behavior: "auto" });
+            }
+          }, 50);
+
+          return;
+        }
+
+        if (activeTab !== "home") {
+          setActiveTab("home");
+          return;
+        }
+
+        App.exitApp();
+      }).then((handle) => {
+        listener = handle;
+      });
+    });
+
+    return () => {
+      listener?.remove();
+    };
+  }, [showSettings, homeSection, activeTab]);
+
   function exportData() {
     const data = {
       savingScore,
