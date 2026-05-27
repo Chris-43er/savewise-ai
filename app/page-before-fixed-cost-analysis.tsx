@@ -929,8 +929,12 @@ ${smartTip}`;
               <div className="grid gap-4">
                 {[
                   { key: "assistant", label: "AI Finanzassistent", text: "Stelle Fragen zu deinen Finanzen" },
-                  { key: "smart", label: "Smart Insights", text: "Empfehlungen, Sparpotenzial, Fixkosten und Trends" },
-                  { key: "transactions", label: "Transaktionen", text: "Aktuelle Buchungen prüfen" }
+                  { key: "tips", label: "AI Empfehlungen", text: "Smarte Spartipps und Hinweise" },
+                  { key: "trend", label: "Monats-Trend", text: "Entwicklung deiner Ausgaben" },
+                  { key: "distribution", label: "Ausgabenverteilung", text: "Kategorien visuell auswerten" },
+                  { key: "overview", label: "Monatsübersicht", text: "Wichtige Kennzahlen kompakt" },
+                  { key: "history", label: "Analyse Verlauf", text: "Bisherige Analysen ansehen" },
+                  { key: "transactions", label: "Letzte Transaktionen", text: "Aktuelle Buchungen prüfen" }
                 ].map((item) => (
                   <button
                     key={item.key}
@@ -984,7 +988,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "tips" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Empfehlungen">
               <div className="space-y-4 mt-6">
                 {monthlyIncome <= 0 && spentThisMonth <= 0 && (
@@ -1114,7 +1118,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "trend" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monats-Trend">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1134,153 +1138,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Fixkosten-Analyse">
-
-              {(() => {
-                const fixedTransactions = transactions.filter((t) =>
-                  ["Wohnen & Fixkosten", "Versicherungen", "Kredite & Finanzierung", "Streaming & Medien"].includes(t.category)
-                );
-
-                const fixedCosts = fixedTransactions.reduce(
-                  (sum, t) => sum + Math.abs(t.amount),
-                  0
-                );
-
-                const fixedRatio =
-                  monthlyIncome > 0
-                    ? Math.round((fixedCosts / monthlyIncome) * 100)
-                    : 0;
-
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-4 mt-6">
-                      <Mini
-                        title="Fixkosten"
-                        value={
-                          fixedCosts > 0
-                            ? fixedCosts.toLocaleString("de-DE", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                              }) + "€"
-                            : "—"
-                        }
-                        color="text-red-400"
-                      />
-
-                      <Mini
-                        title="Fixkostenquote"
-                        value={
-                          monthlyIncome > 0
-                            ? fixedRatio + "%"
-                            : "—"
-                        }
-                        color="text-yellow-400"
-                      />
-                    </div>
-
-                    <div className="space-y-3 mt-6">
-                      {fixedTransactions.length === 0 && (
-                        <Info
-                          color="cyan"
-                          title="Keine Fixkosten erkannt"
-                          text="Noch keine regelmäßigen Kosten erkannt."
-                        />
-                      )}
-
-                      {fixedTransactions.length > 0 && (
-                        <Info
-                          color="emerald"
-                          title="Wiederkehrende Kosten erkannt"
-                          text={fixedTransactions.length + " regelmäßige Zahlungen wurden erkannt."}
-                        />
-                      )}
-
-                      {fixedRatio >= 50 && (
-                        <Info
-                          color="red"
-                          title="Hohe Fixkostenquote"
-                          text="Mehr als 50% deines Einkommens gehen für Fixkosten drauf."
-                        />
-                      )}
-
-                      {fixedRatio > 0 && fixedRatio < 50 && (
-                        <Info
-                          color="emerald"
-                          title="Fixkosten im gesunden Bereich"
-                          text="Deine Fixkostenquote liegt aktuell im stabilen Bereich."
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-6 bg-gray-100 rounded-3xl p-5">
-                      <p className="text-gray-500 font-bold mb-3">
-                        Erkannte Kategorien
-                      </p>
-
-                      <div className="flex flex-wrap gap-3">
-                        {[...new Set(fixedTransactions.map((t) => t.category))].map((cat, index) => (
-                          <div
-                            key={index}
-                            className="bg-white border border-gray-200 px-4 py-2 rounded-2xl text-sm font-bold"
-                          >
-                            {cat}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-            </Panel>
-            </div>
-
-
-
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Sparpotenzial">
-
-              {(() => {
-                const shopping = transactions.filter((t) => t.category === "Shopping").reduce((s, t) => s + Math.abs(t.amount), 0);
-                const streaming = transactions.filter((t) => t.category === "Streaming & Medien").reduce((s, t) => s + Math.abs(t.amount), 0);
-                const online = transactions.filter((t) => t.category === "PayPal / Online").reduce((s, t) => s + Math.abs(t.amount), 0);
-
-                const potential = Math.round((shopping * 0.15 + streaming * 0.25 + online * 0.10) * 100) / 100;
-
-                return (
-                  <div className="space-y-5 mt-6">
-                    <Mini
-                      title="Geschätztes Sparpotenzial"
-                      value={potential > 0 ? potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
-                      color="text-emerald-400"
-                    />
-
-                    {potential > 0 ? (
-                      <Info
-                        color="emerald"
-                        title="Sparpotenzial erkannt"
-                        text={"Du könntest geschätzt ca. " + potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ sparen, wenn du Shopping, Streaming und Onlinezahlungen optimierst."}
-                      />
-                    ) : (
-                      <Info
-                        color="cyan"
-                        title="Noch kein Sparpotenzial berechnet"
-                        text="Lade einen Kontoauszug hoch oder erfasse Ausgaben, damit SaveWise dein Sparpotenzial berechnen kann."
-                      />
-                    )}
-
-                    <Info color="yellow" title="Hinweis" text="Die Berechnung ist eine erste Schätzung und wird später durch KI-Analyse weiter verbessert." />
-                  </div>
-                );
-              })()}
-
-            </Panel>
-            </div>
-
-
-<div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "distribution" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Ausgabenverteilung">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1322,7 +1180,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "overview" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
               <div className="grid gap-4 mt-6">
                 <Mini title="Top Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
@@ -1332,7 +1190,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "history" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Analyse Verlauf">
               <div className="space-y-4 mt-6">
                 {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-500"}>Noch keine Analysen vorhanden.</p>}

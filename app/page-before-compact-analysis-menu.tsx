@@ -929,8 +929,14 @@ ${smartTip}`;
               <div className="grid gap-4">
                 {[
                   { key: "assistant", label: "AI Finanzassistent", text: "Stelle Fragen zu deinen Finanzen" },
-                  { key: "smart", label: "Smart Insights", text: "Empfehlungen, Sparpotenzial, Fixkosten und Trends" },
-                  { key: "transactions", label: "Transaktionen", text: "Aktuelle Buchungen prüfen" }
+                  { key: "tips", label: "AI Empfehlungen", text: "Smarte Spartipps und Hinweise" },
+                  { key: "trend", label: "Monats-Trend", text: "Entwicklung deiner Ausgaben" },
+                  { key: "fixed", label: "Fixkosten-Analyse", text: "Wiederkehrende Kosten erkennen" },
+                  { key: "potential", label: "Sparpotenzial", text: "Mögliche Einsparungen berechnen" },
+                  { key: "distribution", label: "Ausgabenverteilung", text: "Kategorien visuell auswerten" },
+                  { key: "overview", label: "Monatsübersicht", text: "Wichtige Kennzahlen kompakt" },
+                  { key: "history", label: "Analyse Verlauf", text: "Bisherige Analysen ansehen" },
+                  { key: "transactions", label: "Letzte Transaktionen", text: "Aktuelle Buchungen prüfen" }
                 ].map((item) => (
                   <button
                     key={item.key}
@@ -984,7 +990,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "tips" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Empfehlungen">
               <div className="space-y-4 mt-6">
                 {monthlyIncome <= 0 && spentThisMonth <= 0 && (
@@ -1114,7 +1120,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "trend" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monats-Trend">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1135,7 +1141,7 @@ ${smartTip}`;
             </div>
 
             
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "fixed" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Fixkosten-Analyse">
 
               {(() => {
@@ -1239,7 +1245,7 @@ ${smartTip}`;
 
 
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "potential" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Sparpotenzial">
 
               {(() => {
@@ -1280,7 +1286,7 @@ ${smartTip}`;
             </div>
 
 
-<div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+<div className={analyseSection === "distribution" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Ausgabenverteilung">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1322,7 +1328,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "overview" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
               <div className="grid gap-4 mt-6">
                 <Mini title="Top Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
@@ -1332,7 +1338,7 @@ ${smartTip}`;
             </Panel>
             </div>
 
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
+            <div className={analyseSection === "history" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Analyse Verlauf">
               <div className="space-y-4 mt-6">
                 {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-500"}>Noch keine Analysen vorhanden.</p>}
