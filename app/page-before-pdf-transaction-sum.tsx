@@ -171,31 +171,17 @@ setTimeout(() => {
   function detectCategory(text: string) {
     const value = text.toLowerCase();
 
-    if (value.includes("gehalt") || value.includes("lohn") || value.includes("rente") || value.includes("dataport")) return "Einkommen";
+    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney")) return "Streaming";
+    if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl")) return "Lebensmittel";
+    if (value.includes("amazon") || value.includes("zalando")) return "Shopping";
+    if (value.includes("uber") || value.includes("lieferando")) return "Lieferdienste";
 
-    if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl") || value.includes("nahkauf") || value.includes("market")) return "Lebensmittel";
-
-    if (value.includes("amazon") || value.includes("zalando") || value.includes("klarna") || value.includes("aliexpress") || value.includes("pvh")) return "Shopping";
-
-    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney") || value.includes("wow") || value.includes("telekom")) return "Streaming & Medien";
-
-    if (value.includes("team ts") || value.includes("shell") || value.includes("aral") || value.includes("parking") || value.includes("bahn") || value.includes("uber")) return "Mobilität";
-
-    if (value.includes("apotheke") || value.includes("debeka") || value.includes("kranken")) return "Gesundheit";
-
-    if (value.includes("bausparkasse") || value.includes("ib sh") || value.includes("targobank") || value.includes("barclays") || value.includes("mercedes-benz bank")) return "Kredite & Finanzierung";
-
-    if (value.includes("provinzial") || value.includes("hansemerkur") || value.includes("oerag")) return "Versicherungen";
-
-    if (value.includes("yippie") || value.includes("strom") || value.includes("gas") || value.includes("zweckverband") || value.includes("amt probstei") || value.includes("miete")) return "Wohnen & Fixkosten";
-
-    if (value.includes("sabrio") || value.includes("pizza") || value.includes("lieferando")) return "Freizeit & Essen";
-
-    if (value.includes("paypal")) return "PayPal / Online";
-
-    return "Sonstiges";
+    return "Allgemein";
   }
 
+
+  
+  
 
 
 async function analyzePdf(file: File) {
@@ -211,94 +197,63 @@ async function analyzePdf(file: File) {
       disableWorker: false
     }).promise;
 
-    function euro(value: string) {
-      return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
-    }
+    let fullText = "";
 
-    let income = 0;
-    let expenses = 0;
-    const transactionsFromPdf: Transaction[] = [];
-
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-
-      const pageText = content.items.map((item: any) => item.str).join(" ");
-
-      if (
-        pageText.includes("Entgeltinformation") ||
-        pageText.includes("Gesamtumsatzsummen") ||
-        pageText.includes("Kontostand am") && pageText.includes("Gesamtumsatzsummen")
-      ) {
-        continue;
-      }
-
-      let lastDescription = "";
-
-      for (const item of content.items as any[]) {
-        const raw = String(item.str || "").trim();
-
-        if (!raw) continue;
-
-        if (/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) {
-          const value = euro(raw);
-
-          if (value === 0 || value > 10000) continue;
-
-          const cleanName = lastDescription || (raw.startsWith("-") ? "PDF Ausgabe" : "PDF Einnahme");
-
-          if (raw.startsWith("-")) {
-            expenses += value;
-            transactionsFromPdf.push({
-              name: cleanName,
-              amount: -value,
-              category: detectCategory(cleanName)
-            });
-          } else {
-            income += value;
-            transactionsFromPdf.push({
-              name: cleanName,
-              amount: value,
-              category: "Einkommen"
-            });
-          }
-
-          lastDescription = "";
-        } else if (
-          !raw.match(/^\d{2}\.\d{2}\.\d{4}$/) &&
-          !raw.toLowerCase().includes("betrag soll") &&
-          !raw.toLowerCase().includes("betrag haben") &&
-          !raw.toLowerCase().includes("datum erläuterung")
-        ) {
-          lastDescription = raw.length > 80 ? raw.slice(0, 80) : raw;
-        }
-      }
+      fullText += " " + content.items.map((item: any) => item.str).join(" ");
     }
 
-    income = Math.round(income * 100) / 100;
-    expenses = Math.round(expenses * 100) / 100;
+    const normalized = fullText.replace(/\s+/g, " ");
+
+    function euro(value: string) {
+      return Math.abs(Number(value.replace(/\./g, "").replace(",", ".")));
+    }
+
+    let match = normalized.match(
+      /Gesamtumsatzsummen[\s\S]*?Summe Soll EUR Anzahl Summe Haben EUR Anzahl[\s\S]*?(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d+)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d+)/i
+    );
+
+    if (!match) {
+      match = normalized.match(
+        /(-?\d{1,3}(?:\.\d{3})*,\d{2})\s+63\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+6/
+      );
+    }
+
+    if (!match) {
+      setUploadStatus("PDF gelesen, aber Gesamtsummen nicht erkannt. Bitte manuell eintragen.");
+      return;
+    }
+
+    const expenses = Math.round(euro(match[1]) * 100) / 100;
+    const income = Math.round(euro(match[3] || match[2]) * 100) / 100;
+    const remaining = Math.round((income - expenses) * 100) / 100;
 
     setMonthlyIncome(income);
-    setIncomeInput(income > 0 ? income.toFixed(2) : "");
+    setIncomeInput(income.toFixed(2));
 
     setSpentThisMonth(expenses);
-    setExpenseInput(expenses > 0 ? expenses.toFixed(2) : "");
+    setExpenseInput(expenses.toFixed(2));
 
-    setTransactions(transactionsFromPdf);
+    setTransactions([
+      { name: "PDF Einnahmen", amount: income, category: "Einkommen" },
+      { name: "PDF Ausgaben", amount: -expenses, category: "Ausgaben" }
+    ]);
 
     setSavingScore(
       income > 0
-        ? Math.max(0, Math.min(100, Math.round(((income - expenses) / income) * 100)))
+        ? Math.max(0, Math.min(100, Math.round((remaining / income) * 100)))
         : 0
     );
 
     setUploadStatus(
-      "PDF analysiert: " +
-      transactionsFromPdf.length +
-      " Buchungen erkannt. Einnahmen " +
-      income.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+      "PDF analysiert: Einnahmen " +
+      income.toLocaleString("de-DE", { minimumFractionDigits: 2 }) +
       "€, Ausgaben " +
-      expenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+      expenses.toLocaleString("de-DE", { minimumFractionDigits: 2 }) +
+      "€, Übrig " +
+      remaining.toLocaleString("de-DE", { minimumFractionDigits: 2 }) +
       "€."
     );
   } catch (error) {
@@ -629,15 +584,7 @@ ${smartTip}`;
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
               <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-              <Card
-                title="Übrig"
-                value={
-                  Number.isFinite(monthlyIncome) && Number.isFinite(spentThisMonth) && monthlyIncome > 0
-                    ? (monthlyIncome - spentThisMonth).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
-                    : "—"
-                }
-                color="text-yellow-400"
-              />
+              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-yellow-400" />
               <Card title="Sparscore" value={transactions.length > 0 && savingScore > 0 ? savingScore + "/100" : "—"} color="text-cyan-400" />
               <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
@@ -1027,71 +974,7 @@ ${smartTip}`;
                   <Info
                     color="cyan"
                     title="Transaktionen erkannt"
-                    text="SaveWise AI analysiert deine Buchungen automatisch für Kategorien, Budget und Sparpotenziale."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Lebensmittel") && (
-                  <Info
-                    color="emerald"
-                    title="Lebensmittel-Ausgaben erkannt"
-                    text="Prüfe wöchentliche Supermarkt-Ausgaben und vergleiche Preise, um zusätzliches Sparpotenzial zu nutzen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Shopping") && (
-                  <Info
-                    color="yellow"
-                    title="Shopping-Ausgaben erkannt"
-                    text="Shopping-Ausgaben wurden erkannt. Ein festes Monatslimit kann helfen, spontane Käufe zu reduzieren."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Streaming & Medien") && (
-                  <Info
-                    color="cyan"
-                    title="Streaming-Abos erkannt"
-                    text="Überprüfe aktive Streaming- und Medien-Abos auf ungenutzte Dienste oder doppelte Kosten."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Mobilität") && (
-                  <Info
-                    color="yellow"
-                    title="Mobilitätskosten erkannt"
-                    text="Transport- und Mobilitätskosten wurden erkannt. Monatstickets oder Fahrgemeinschaften könnten Kosten senken."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Kredite & Finanzierung") && (
-                  <Info
-                    color="red"
-                    title="Finanzierungs-Kosten erkannt"
-                    text="Kredit- oder Finanzierungszahlungen wurden erkannt. Prüfe Zinssätze und mögliche Umschuldungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Versicherungen") && (
-                  <Info
-                    color="cyan"
-                    title="Versicherungen erkannt"
-                    text="Vergleiche regelmäßig Versicherungsbeiträge und prüfe mögliche Einsparungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "PayPal / Online") && (
-                  <Info
-                    color="yellow"
-                    title="Onlinezahlungen erkannt"
-                    text="Viele kleine Onlinezahlungen können sich summieren. Kontrolliere regelmäßige Abbuchungen besonders aufmerksam."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Wohnen & Fixkosten") && (
-                  <Info
-                    color="emerald"
-                    title="Fixkosten erkannt"
-                    text="Fixkosten wurden erkannt. Bereits kleine Einsparungen bei Strom, Gas oder Verträgen können langfristig helfen."
+                    text="SaveWise AI nutzt deine hinterlegten Buchungen, um Budget, Sparquote und Empfehlungen genauer zu berechnen."
                   />
                 )}
               </div>

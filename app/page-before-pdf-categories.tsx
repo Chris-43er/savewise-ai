@@ -171,30 +171,17 @@ setTimeout(() => {
   function detectCategory(text: string) {
     const value = text.toLowerCase();
 
-    if (value.includes("gehalt") || value.includes("lohn") || value.includes("rente") || value.includes("dataport")) return "Einkommen";
+    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney")) return "Streaming";
+    if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl")) return "Lebensmittel";
+    if (value.includes("amazon") || value.includes("zalando")) return "Shopping";
+    if (value.includes("uber") || value.includes("lieferando")) return "Lieferdienste";
 
-    if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl") || value.includes("nahkauf") || value.includes("market")) return "Lebensmittel";
-
-    if (value.includes("amazon") || value.includes("zalando") || value.includes("klarna") || value.includes("aliexpress") || value.includes("pvh")) return "Shopping";
-
-    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney") || value.includes("wow") || value.includes("telekom")) return "Streaming & Medien";
-
-    if (value.includes("team ts") || value.includes("shell") || value.includes("aral") || value.includes("parking") || value.includes("bahn") || value.includes("uber")) return "Mobilität";
-
-    if (value.includes("apotheke") || value.includes("debeka") || value.includes("kranken")) return "Gesundheit";
-
-    if (value.includes("bausparkasse") || value.includes("ib sh") || value.includes("targobank") || value.includes("barclays") || value.includes("mercedes-benz bank")) return "Kredite & Finanzierung";
-
-    if (value.includes("provinzial") || value.includes("hansemerkur") || value.includes("oerag")) return "Versicherungen";
-
-    if (value.includes("yippie") || value.includes("strom") || value.includes("gas") || value.includes("zweckverband") || value.includes("amt probstei") || value.includes("miete")) return "Wohnen & Fixkosten";
-
-    if (value.includes("sabrio") || value.includes("pizza") || value.includes("lieferando")) return "Freizeit & Essen";
-
-    if (value.includes("paypal")) return "PayPal / Online";
-
-    return "Sonstiges";
+    return "Allgemein";
   }
+
+
+  
+  
 
 
 
@@ -233,44 +220,29 @@ async function analyzePdf(file: File) {
         continue;
       }
 
-      let lastDescription = "";
-
       for (const item of content.items as any[]) {
         const raw = String(item.str || "").trim();
 
-        if (!raw) continue;
+        if (!/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) continue;
 
-        if (/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) {
-          const value = euro(raw);
+        const value = euro(raw);
 
-          if (value === 0 || value > 10000) continue;
+        if (value === 0 || value > 10000) continue;
 
-          const cleanName = lastDescription || (raw.startsWith("-") ? "PDF Ausgabe" : "PDF Einnahme");
-
-          if (raw.startsWith("-")) {
-            expenses += value;
-            transactionsFromPdf.push({
-              name: cleanName,
-              amount: -value,
-              category: detectCategory(cleanName)
-            });
-          } else {
-            income += value;
-            transactionsFromPdf.push({
-              name: cleanName,
-              amount: value,
-              category: "Einkommen"
-            });
-          }
-
-          lastDescription = "";
-        } else if (
-          !raw.match(/^\d{2}\.\d{2}\.\d{4}$/) &&
-          !raw.toLowerCase().includes("betrag soll") &&
-          !raw.toLowerCase().includes("betrag haben") &&
-          !raw.toLowerCase().includes("datum erläuterung")
-        ) {
-          lastDescription = raw.length > 80 ? raw.slice(0, 80) : raw;
+        if (raw.startsWith("-")) {
+          expenses += value;
+          transactionsFromPdf.push({
+            name: "PDF Ausgabe",
+            amount: -value,
+            category: "Ausgaben"
+          });
+        } else {
+          income += value;
+          transactionsFromPdf.push({
+            name: "PDF Einnahme",
+            amount: value,
+            category: "Einkommen"
+          });
         }
       }
     }
@@ -1027,71 +999,7 @@ ${smartTip}`;
                   <Info
                     color="cyan"
                     title="Transaktionen erkannt"
-                    text="SaveWise AI analysiert deine Buchungen automatisch für Kategorien, Budget und Sparpotenziale."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Lebensmittel") && (
-                  <Info
-                    color="emerald"
-                    title="Lebensmittel-Ausgaben erkannt"
-                    text="Prüfe wöchentliche Supermarkt-Ausgaben und vergleiche Preise, um zusätzliches Sparpotenzial zu nutzen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Shopping") && (
-                  <Info
-                    color="yellow"
-                    title="Shopping-Ausgaben erkannt"
-                    text="Shopping-Ausgaben wurden erkannt. Ein festes Monatslimit kann helfen, spontane Käufe zu reduzieren."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Streaming & Medien") && (
-                  <Info
-                    color="cyan"
-                    title="Streaming-Abos erkannt"
-                    text="Überprüfe aktive Streaming- und Medien-Abos auf ungenutzte Dienste oder doppelte Kosten."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Mobilität") && (
-                  <Info
-                    color="yellow"
-                    title="Mobilitätskosten erkannt"
-                    text="Transport- und Mobilitätskosten wurden erkannt. Monatstickets oder Fahrgemeinschaften könnten Kosten senken."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Kredite & Finanzierung") && (
-                  <Info
-                    color="red"
-                    title="Finanzierungs-Kosten erkannt"
-                    text="Kredit- oder Finanzierungszahlungen wurden erkannt. Prüfe Zinssätze und mögliche Umschuldungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Versicherungen") && (
-                  <Info
-                    color="cyan"
-                    title="Versicherungen erkannt"
-                    text="Vergleiche regelmäßig Versicherungsbeiträge und prüfe mögliche Einsparungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "PayPal / Online") && (
-                  <Info
-                    color="yellow"
-                    title="Onlinezahlungen erkannt"
-                    text="Viele kleine Onlinezahlungen können sich summieren. Kontrolliere regelmäßige Abbuchungen besonders aufmerksam."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Wohnen & Fixkosten") && (
-                  <Info
-                    color="emerald"
-                    title="Fixkosten erkannt"
-                    text="Fixkosten wurden erkannt. Bereits kleine Einsparungen bei Strom, Gas oder Verträgen können langfristig helfen."
+                    text="SaveWise AI nutzt deine hinterlegten Buchungen, um Budget, Sparquote und Empfehlungen genauer zu berechnen."
                   />
                 )}
               </div>
