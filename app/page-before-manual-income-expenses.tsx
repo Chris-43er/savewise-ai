@@ -25,6 +25,7 @@ export default function Page() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   const [introStep, setIntroStep] = useState(0);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 const [isLightMode, setIsLightMode] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState("");
@@ -36,10 +37,6 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [monthlyBudget, setMonthlyBudget] = useState(1200);
   const [budgetInput, setBudgetInput] = useState("1200");
   const [spentThisMonth, setSpentThisMonth] = useState(0);
-  const [monthlyIncome, setMonthlyIncome] = useState(0);
-  const [incomeInput, setIncomeInput] = useState("");
-  const [expenseInput, setExpenseInput] = useState("");
-  const [manualSaved, setManualSaved] = useState(false);
   const [topCategory, setTopCategory] = useState("Streaming");
   const [history, setHistory] = useState<string[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>(defaultTransactions);
@@ -98,9 +95,6 @@ const [savedAmount, setSavedAmount] = useState(0);
       setSavingScore(data.savingScore ?? 0);
       setMonthlySavings(data.monthlySavings ?? 120);
       setSpentThisMonth(data.spentThisMonth ?? 0);
-      setMonthlyIncome(data.monthlyIncome ?? 0);
-      setIncomeInput(data.monthlyIncome ? String(data.monthlyIncome) : "");
-      setExpenseInput(data.spentThisMonth ? String(data.spentThisMonth) : "");
       setTopCategory(data.topCategory ?? "Streaming");
       setHistory(data.history ?? []);
       setTransactions(data.transactions ?? defaultTransactions);
@@ -489,11 +483,11 @@ ${smartTip}`;
           <div className="space-y-8 mt-8">
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+              <Card title="Einkommen" value="—" color="text-emerald-400" />
               <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
-              <Card title="Übrig" value={transactions.length > 0 ? monthlyIncome - spentThisMonth + "€" : "—"} color="text-yellow-400" />
+              <Card title="Übrig" value={transactions.length > 0 ? 3200 - spentThisMonth + "€" : "—"} color="text-yellow-400" />
               <Card title="Sparscore" value={transactions.length > 0 && savingScore > 0 ? savingScore + "/100" : "—"} color="text-cyan-400" />
-              <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
+              <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((3200 - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
             )}
 
@@ -588,9 +582,9 @@ ${smartTip}`;
               <div className={homeSection === "compare" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
-                  <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome + "€" : "—"} color="text-emerald-400" />
+                  <Mini title="Einnahmen" value="3200€" color="text-emerald-400" />
                   <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth + "€" : "—"} color="text-red-400" />
-                  <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
+                  <Mini title="Sparquote" value={Math.max(0, Math.round(((3200 - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
                 </div>
 
                 <div className="mt-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-black">
@@ -603,7 +597,7 @@ ${smartTip}`;
                   </p>
 
                   <p className="mt-2 text-black/70">
-                    Deine aktuelle Sparquote liegt bei {Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100))}%.
+                    Deine aktuelle Sparquote liegt bei {Math.max(0, Math.round(((3200 - spentThisMonth) / 3200) * 100))}%.
                   </p>
                 </div>
               </Panel>
@@ -742,7 +736,7 @@ ${smartTip}`;
                       { name: "Jan", ausgaben: 980, sparen: 420 },
                       { name: "Feb", ausgaben: 1120, sparen: 360 },
                       { name: "Mär", ausgaben: 870, sparen: 520 },
-                      { name: "Apr", ausgaben: spentThisMonth, sparen: Math.max(0, monthlyIncome - spentThisMonth) }
+                      { name: "Apr", ausgaben: spentThisMonth, sparen: Math.max(0, 3200 - spentThisMonth) }
                     ]}
                   >
                     <XAxis dataKey="name" />
@@ -845,45 +839,9 @@ ${smartTip}`;
             <div className={analyseSection === "tips" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Empfehlungen">
               <div className="space-y-4 mt-6">
-                {monthlyIncome <= 0 && spentThisMonth <= 0 && (
-                  <Info
-                    color="cyan"
-                    title="Noch keine Finanzdaten"
-                    text="Trage Einkommen und Ausgaben manuell ein oder lade einen Report hoch, damit SaveWise AI persönliche Empfehlungen erstellen kann."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome > 0.8 && (
-                  <Info
-                    color="red"
-                    title="Hohe Ausgaben erkannt"
-                    text="Deine Ausgaben liegen über 80% deines Einkommens. Prüfe variable Kosten und setze ein Wochenlimit."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome <= 0.8 && (
-                  <Info
-                    color="emerald"
-                    title="Solide Finanzlage"
-                    text="Deine Ausgaben liegen im kontrollierten Bereich. Du kannst den Überschuss gezielt für Sparziele nutzen."
-                  />
-                )}
-
-                {monthlyBudget > 0 && spentThisMonth > monthlyBudget * 0.9 && (
-                  <Info
-                    color="yellow"
-                    title="Budget fast erreicht"
-                    text="Du hast bereits mehr als 90% deines Monatsbudgets verbraucht. Reduziere spontane Ausgaben bis Monatsende."
-                  />
-                )}
-
-                {transactions.length > 0 && (
-                  <Info
-                    color="cyan"
-                    title="Transaktionen erkannt"
-                    text="SaveWise AI nutzt deine hinterlegten Buchungen, um Budget, Sparquote und Empfehlungen genauer zu berechnen."
-                  />
-                )}
+                <Info color="emerald" title="Sparchance erkannt" text="Reduziere Lieferdienste um 2 Bestellungen pro Woche." />
+                <Info color="cyan" title="Abo-Check empfohlen" text="Prüfe Streaming- und App-Abos auf ungenutzte Dienste." />
+                <Info color="yellow" title="Budget-Hinweis" text="Setze ein Wochenlimit für spontane Shopping-Ausgaben." />
               </div>
             </Panel>
             </div>
@@ -892,18 +850,22 @@ ${smartTip}`;
             <Panel isLightMode={isLightMode} title="Monats-Trend">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={
-                    transactions.length > 0
-                      ? transactions.map((item, index) => ({ value: Math.abs(item.amount), name: String(index + 1) }))
-                      : [{ value: 0 }]
-                  }>
+                  <LineChart data={[
+                    { value: 320 },
+                    { value: 410 },
+                    { value: 380 },
+                    { value: 520 },
+                    { value: 460 },
+                    { value: 610 },
+                    { value: 540 }
+                  ]}>
                     <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
               <p className="text-gray-400 mt-4">
-                {transactions.length > 0 ? "Dein Monats-Trend basiert auf deinen hinterlegten Daten." : "Noch keine Daten vorhanden. Trage Daten manuell ein oder lade eine Datei hoch."}
+                Deine Ausgaben sind diese Woche leicht gestiegen.
               </p>
             </Panel>
             </div>
@@ -914,13 +876,12 @@ ${smartTip}`;
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={
-                        transactions.length > 0
-                          ? transactions
-                              .filter((item) => item.amount < 0)
-                              .map((item) => ({ name: item.category, value: Math.abs(item.amount) }))
-                          : [{ name: "Keine Daten", value: 1 }]
-                      }
+                      data={[
+                        { name: "Shopping", value: 40 },
+                        { name: "Streaming", value: 22 },
+                        { name: "Lebensmittel", value: 18 },
+                        { name: "Transport", value: 20 }
+                      ]}
                       dataKey="value"
                       innerRadius={55}
                       outerRadius={90}
@@ -934,28 +895,21 @@ ${smartTip}`;
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid gap-3 mt-4 text-sm">
-                {transactions.length > 0 ? (
-                  transactions
-                    .filter((item) => item.amount < 0)
-                    .map((item, index) => (
-                      <p key={index} className="text-gray-400">
-                        ● {item.category}: {Math.abs(item.amount)}€
-                      </p>
-                    ))
-                ) : (
-                  <p className="text-gray-400">Noch keine Ausgaben vorhanden.</p>
-                )}
+              <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+                <p className="text-emerald-400">● Shopping 40%</p>
+                <p className="text-cyan-400">● Streaming 22%</p>
+                <p className="text-yellow-400">● Lebensmittel 18%</p>
+                <p className="text-pink-400">● Transport 20%</p>
               </div>
             </Panel>
             </div>
 
             <div className={analyseSection === "overview" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
-              <div className="grid gap-4 mt-6">
-                <Mini title="Top Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
-                <Mini title="Analysen" value={history.length > 0 ? String(history.length) : "—"} color="text-emerald-400" />
-                <Mini title="Transaktionen" value={transactions.length > 0 ? String(transactions.length) : "—"} color="text-yellow-400" />
+              <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
+                <Mini title="Top Kategorie" value={topCategory} color="text-cyan-400" />
+                <Mini title="Analysen" value={String(history.length)} color="text-emerald-400" />
+                <Mini title="Transaktionen" value={String(transactions.length)} color="text-yellow-400" />
               </div>
             </Panel>
             </div>
@@ -1007,11 +961,6 @@ ${smartTip}`;
                       key: "upload",
                       label: "Datei-Upload",
                       text: "Kontoauszüge als PDF oder CSV hochladen und analysieren"
-                    },
-                    {
-                      key: "manual",
-                      label: "Manuelle Eingabe",
-                      text: "Einkommen und Ausgaben händisch eintragen"
                     },
                     {
                       key: "pdf",
@@ -1106,79 +1055,6 @@ ${smartTip}`;
                     {analysisResult}
                   </div>
                 )}
-              </Panel>
-            </div>
-
-            
-            <div className={reportSection === "manual" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Manuelle Eingabe">
-                <p className="text-gray-400 mt-4">
-                  Trage dein monatliches Einkommen und deine bisherigen Ausgaben manuell ein, falls nichts aus einer Datei erkannt wurde.
-                </p>
-
-                <div className="grid gap-5 mt-6">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-sm font-bold text-gray-500">
-                        Monatliches Einkommen
-                      </p>
-
-                      {manualSaved && incomeInput && (
-                        <span className="text-emerald-400 text-lg">✅</span>
-                      )}
-                    </div>
-                    <input
-                      type="number"
-                      value={incomeInput}
-                      onChange={(e) => { setIncomeInput(e.target.value); setManualSaved(false); }}
-                      placeholder="z.B. 3200"
-                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-gray-900"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-sm font-bold text-gray-500">
-                        Bisherige Ausgaben
-                      </p>
-
-                      {manualSaved && expenseInput && (
-                        <span className="text-emerald-400 text-lg">✅</span>
-                      )}
-                    </div>
-                    <input
-                      type="number"
-                      value={expenseInput}
-                      onChange={(e) => { setExpenseInput(e.target.value); setManualSaved(false); }}
-                      placeholder="z.B. 840"
-                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-gray-900"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const income = Number(incomeInput);
-                    const expenses = Number(expenseInput);
-
-                    setMonthlyIncome(!isNaN(income) && income > 0 ? income : 0);
-                    setSpentThisMonth(!isNaN(expenses) && expenses > 0 ? expenses : 0);
-
-                    if ((!isNaN(income) && income > 0) || (!isNaN(expenses) && expenses > 0)) {
-                      setTransactions([
-                        ...(income > 0 ? [{ name: "Manuelles Einkommen", amount: income, category: "Einkommen" }] : []),
-                        ...(expenses > 0 ? [{ name: "Manuelle Ausgaben", amount: -expenses, category: "Ausgaben" }] : [])
-                      ]);
-
-                      setSavingScore(income > 0 ? Math.max(0, Math.min(100, Math.round(((income - expenses) / income) * 100))) : 0);
-                      setManualSaved(true);
-                    }
-                  }}
-                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black"
-                >
-                  Daten speichern
-                </button>
               </Panel>
             </div>
 

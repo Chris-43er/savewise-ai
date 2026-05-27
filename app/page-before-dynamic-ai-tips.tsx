@@ -845,45 +845,9 @@ ${smartTip}`;
             <div className={analyseSection === "tips" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Empfehlungen">
               <div className="space-y-4 mt-6">
-                {monthlyIncome <= 0 && spentThisMonth <= 0 && (
-                  <Info
-                    color="cyan"
-                    title="Noch keine Finanzdaten"
-                    text="Trage Einkommen und Ausgaben manuell ein oder lade einen Report hoch, damit SaveWise AI persönliche Empfehlungen erstellen kann."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome > 0.8 && (
-                  <Info
-                    color="red"
-                    title="Hohe Ausgaben erkannt"
-                    text="Deine Ausgaben liegen über 80% deines Einkommens. Prüfe variable Kosten und setze ein Wochenlimit."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome <= 0.8 && (
-                  <Info
-                    color="emerald"
-                    title="Solide Finanzlage"
-                    text="Deine Ausgaben liegen im kontrollierten Bereich. Du kannst den Überschuss gezielt für Sparziele nutzen."
-                  />
-                )}
-
-                {monthlyBudget > 0 && spentThisMonth > monthlyBudget * 0.9 && (
-                  <Info
-                    color="yellow"
-                    title="Budget fast erreicht"
-                    text="Du hast bereits mehr als 90% deines Monatsbudgets verbraucht. Reduziere spontane Ausgaben bis Monatsende."
-                  />
-                )}
-
-                {transactions.length > 0 && (
-                  <Info
-                    color="cyan"
-                    title="Transaktionen erkannt"
-                    text="SaveWise AI nutzt deine hinterlegten Buchungen, um Budget, Sparquote und Empfehlungen genauer zu berechnen."
-                  />
-                )}
+                <Info color="emerald" title="Sparchance erkannt" text="Reduziere Lieferdienste um 2 Bestellungen pro Woche." />
+                <Info color="cyan" title="Abo-Check empfohlen" text="Prüfe Streaming- und App-Abos auf ungenutzte Dienste." />
+                <Info color="yellow" title="Budget-Hinweis" text="Setze ein Wochenlimit für spontane Shopping-Ausgaben." />
               </div>
             </Panel>
             </div>
@@ -892,18 +856,22 @@ ${smartTip}`;
             <Panel isLightMode={isLightMode} title="Monats-Trend">
               <div className="h-64 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={
-                    transactions.length > 0
-                      ? transactions.map((item, index) => ({ value: Math.abs(item.amount), name: String(index + 1) }))
-                      : [{ value: 0 }]
-                  }>
+                  <LineChart data={[
+                    { value: 320 },
+                    { value: 410 },
+                    { value: 380 },
+                    { value: 520 },
+                    { value: 460 },
+                    { value: 610 },
+                    { value: 540 }
+                  ]}>
                     <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={5} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
 
               <p className="text-gray-400 mt-4">
-                {transactions.length > 0 ? "Dein Monats-Trend basiert auf deinen hinterlegten Daten." : "Noch keine Daten vorhanden. Trage Daten manuell ein oder lade eine Datei hoch."}
+                Deine Ausgaben sind diese Woche leicht gestiegen.
               </p>
             </Panel>
             </div>
@@ -914,13 +882,12 @@ ${smartTip}`;
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={
-                        transactions.length > 0
-                          ? transactions
-                              .filter((item) => item.amount < 0)
-                              .map((item) => ({ name: item.category, value: Math.abs(item.amount) }))
-                          : [{ name: "Keine Daten", value: 1 }]
-                      }
+                      data={[
+                        { name: "Shopping", value: 40 },
+                        { name: "Streaming", value: 22 },
+                        { name: "Lebensmittel", value: 18 },
+                        { name: "Transport", value: 20 }
+                      ]}
                       dataKey="value"
                       innerRadius={55}
                       outerRadius={90}
@@ -934,28 +901,21 @@ ${smartTip}`;
                 </ResponsiveContainer>
               </div>
 
-              <div className="grid gap-3 mt-4 text-sm">
-                {transactions.length > 0 ? (
-                  transactions
-                    .filter((item) => item.amount < 0)
-                    .map((item, index) => (
-                      <p key={index} className="text-gray-400">
-                        ● {item.category}: {Math.abs(item.amount)}€
-                      </p>
-                    ))
-                ) : (
-                  <p className="text-gray-400">Noch keine Ausgaben vorhanden.</p>
-                )}
+              <div className="grid grid-cols-2 gap-3 mt-4 text-sm">
+                <p className="text-emerald-400">● Shopping 40%</p>
+                <p className="text-cyan-400">● Streaming 22%</p>
+                <p className="text-yellow-400">● Lebensmittel 18%</p>
+                <p className="text-pink-400">● Transport 20%</p>
               </div>
             </Panel>
             </div>
 
             <div className={analyseSection === "overview" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
-              <div className="grid gap-4 mt-6">
-                <Mini title="Top Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
-                <Mini title="Analysen" value={history.length > 0 ? String(history.length) : "—"} color="text-emerald-400" />
-                <Mini title="Transaktionen" value={transactions.length > 0 ? String(transactions.length) : "—"} color="text-yellow-400" />
+              <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
+                <Mini title="Top Kategorie" value={topCategory} color="text-cyan-400" />
+                <Mini title="Analysen" value={String(history.length)} color="text-emerald-400" />
+                <Mini title="Transaktionen" value={String(transactions.length)} color="text-yellow-400" />
               </div>
             </Panel>
             </div>
