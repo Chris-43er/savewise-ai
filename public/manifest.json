@@ -1,0 +1,17 @@
+{
+  "name": "SaveWise AI",
+  "short_name": "SaveWise",
+  "description": "AI Finanzdashboard der nächsten Generation",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050816",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/savewise-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

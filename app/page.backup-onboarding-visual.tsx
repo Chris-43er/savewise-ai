@@ -720,20 +720,6 @@ setSpentThisMonth(0);
     <>
 
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes softPulse {
-          0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0.0); }
-          50% { box-shadow: 0 0 35px rgba(16,185,129,0.22); }
-        }
-
-        .savewise-glow {
-          animation: softPulse 2.4s ease-in-out infinite;
-        }
-
         /* FINAL CONTRAST FIX */
         .savewise-light-fix h1,
         .savewise-light-fix h2,
@@ -1873,8 +1859,8 @@ setSpentThisMonth(0);
       
       {showIntro && !showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center animate-[fadeIn_0.35s_ease-out] shadow-emerald-400/10">
-            <div className="text-6xl mb-4">
+          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
+            <div className="text-6xl mb-5">
               {["💸", "🏠", "📊", "🤖", "📄", "🎯", "⚙️"][introStep]}
             </div>
 
@@ -1885,117 +1871,46 @@ setSpentThisMonth(0);
             <h2 className="text-3xl font-black text-white leading-tight">
               {[
                 "Willkommen bei SaveWise AI",
-                "Startseite",
-                "Analyse",
-                "AI Assistent",
-                "Report",
-                "Budget & Sparziel",
+                "Startseite & Übersicht",
+                "Analyse-Bereich",
+                "AI Finanzassistent",
+                "Report & Upload",
+                "Sparziele und Budget",
                 "Einstellungen"
               ][introStep]}
             </h2>
 
             <p className="text-white mt-5 text-base leading-relaxed">
               {[
-                "Dein Finanzdashboard für Budget, Sparen und KI-gestützte Auswertung.",
-                "Hier siehst du deine wichtigsten Werte: Sparen, Score, Kategorie, Einkommen und Ausgaben.",
-                "Hier findest du Smart Insights, Transaktionen und automatische Auswertungen.",
-                "Stelle Fragen zu Budget, Ausgaben, Sparscore oder Sparpotenzial.",
-                "Lade Dateien hoch, trage Daten manuell ein oder erstelle einen PDF-Report.",
-                "Setze Limits, verfolge Ziele und erkenne deinen Fortschritt.",
-                "Wechsle den Modus, exportiere Daten oder setze die App zurück."
+                "SaveWise AI hilft dir, Einnahmen, Ausgaben, Sparpotenzial und Risiken übersichtlich zu analysieren.",
+                "Auf der Startseite siehst du Logo, Sparen, Score, Top-Kategorie sowie deine wichtigsten Finanzkarten.",
+                "Im Analyse-Bereich findest du Smart Insights, Transaktionen und automatische Auswertungen deiner Daten.",
+                "Der AI Finanzassistent beantwortet Fragen zu Budget, Ausgaben, Sparscore und möglichen Einsparungen.",
+                "Im Report-Bereich kannst du Kontoauszüge als PDF, CSV oder Screenshot hochladen und Finanzreports erstellen.",
+                "Über Monatsbudget und Sparziel steuerst du Limits, Fortschritt und deine finanzielle Entwicklung.",
+                "In den Einstellungen kannst du Daten zurücksetzen, exportieren, den Modus wechseln und diese Einführung erneut ansehen."
               ][introStep]}
             </p>
 
-            <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-4">
-              {introStep === 0 && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-emerald-400/20 p-3">
-                    <p className="text-xs text-emerald-300 font-black">SPAREN</p>
-                    <p className="text-white font-black mt-2">155€</p>
-                  </div>
-                  <div className="rounded-2xl bg-cyan-400/20 p-3">
-                    <p className="text-xs text-cyan-300 font-black">SCORE</p>
-                    <p className="text-white font-black mt-2">5/100</p>
-                  </div>
-                  <div className="rounded-2xl bg-purple-400/20 p-3">
-                    <p className="text-xs text-purple-300 font-black">KI</p>
-                    <p className="text-white font-black mt-2">Insight</p>
-                  </div>
-                </div>
-              )}
+            <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 text-left">
+              <p className="text-sm font-black text-emerald-300 mb-2">
+                Was du hier findest:
+              </p>
 
-              {introStep === 1 && (
-                <div className="grid grid-cols-2 gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Einkommen</p>
-                    <p className="text-emerald-300 font-black mt-2">3.743€</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Ausgaben</p>
-                    <p className="text-red-300 font-black mt-2">1.577€</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 2 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Smart Insights</p>
-                    <p className="text-gray-300 text-sm mt-1">Empfehlungen & Trends</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Transaktionen</p>
-                    <p className="text-gray-300 text-sm mt-1">Buchungen prüfen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 3 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-emerald-300 font-black">Beispielfrage</p>
-                  <p className="text-white mt-2">„Wie kann ich diesen Monat mehr sparen?“</p>
-                </div>
-              )}
-
-              {introStep === 4 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Datei-Upload</p>
-                    <p className="text-gray-300 text-sm mt-1">PDF, CSV oder Screenshot</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">PDF-Report</p>
-                    <p className="text-gray-300 text-sm mt-1">Finanzreport erstellen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 5 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-white font-black">Sparziel Urlaub</p>
-                  <div className="mt-3 h-3 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-[35%] bg-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-emerald-300 font-black mt-3">35% erreicht</p>
-                </div>
-              )}
-
-              {introStep === 6 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Modus wechseln</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Daten exportieren</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">App zurücksetzen</p>
-                  </div>
-                </div>
-              )}
+              <p className="text-sm text-white leading-relaxed">
+                {[
+                  "Eine kompakte Finanz-App mit lokal gespeicherten Daten und Premium-Dashboard.",
+                  "Home-Menü: Übersicht, Monatsvergleich, Sparziel, Monatsbudget und Finanztrend.",
+                  "Analyse-Menü: AI Finanzassistent, Smart Insights und Transaktionen.",
+                  "Du kannst konkrete Fragen stellen, z.B. „Wie spare ich mehr Geld?“.",
+                  "Upload-Menü: Datei-Upload, manuelle Eingabe und PDF-Report.",
+                  "Setze klare Ziele und prüfe regelmäßig, ob du auf Kurs bist.",
+                  "Nutze Export und Reset bewusst. Deine Daten bleiben lokal in der App."
+                ][introStep]}
+              </p>
             </div>
 
-            <div className="flex justify-center gap-2 mt-7">
+            <div className="flex justify-center gap-2 mt-8">
               {[0,1,2,3,4,5,6].map((i) => (
                 <div
                   key={i}
@@ -2007,7 +1922,7 @@ setSpentThisMonth(0);
               ))}
             </div>
 
-            <div className="flex gap-3 mt-8">
+            <div className="flex gap-3 mt-9">
               <button
                 type="button"
                 onClick={() => {
@@ -2031,7 +1946,7 @@ setSpentThisMonth(0);
                     setIntroStep(0);
                   }
                 }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all savewise-glow"
+                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all"
               >
                 {introStep < 6 ? "Weiter" : "Loslegen"}
               </button>

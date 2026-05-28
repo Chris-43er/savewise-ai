@@ -684,7 +684,7 @@ setSpentThisMonth(0);
 
   const aiInsight =
     transactions.length === 0
-      ? "Datenbasis fehlt"
+      ? "Daten hochladen"
       : spentThisMonth > monthlyBudget
       ? "Budget kritisch"
       : savingsRate >= 30
@@ -698,7 +698,7 @@ setSpentThisMonth(0);
       : spendingRatio > 80
       ? "Ausgaben im Blick"
       : monthlySavings > 250
-      ? "Sparpotenzial erkannt"
+      ? "Potenzial erkannt"
       : "Finanzen stabil";
 
   const aiRecommendation =
@@ -718,120 +718,6 @@ setSpentThisMonth(0);
 
   return (
     <>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes softPulse {
-          0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0.0); }
-          50% { box-shadow: 0 0 35px rgba(16,185,129,0.22); }
-        }
-
-        .savewise-glow {
-          animation: softPulse 2.4s ease-in-out infinite;
-        }
-
-        /* FINAL CONTRAST FIX */
-        .savewise-light-fix h1,
-        .savewise-light-fix h2,
-        .savewise-light-fix h3,
-        .savewise-light-fix label,
-        .savewise-light-fix p {
-          color: #000000 !important;
-        }
-
-        .savewise-light-fix button[class*="bg-black"],
-        .savewise-light-fix button[class*="bg-black"] *,
-        .savewise-light-fix button[class*="bg-[#1f1f24]"],
-        .savewise-light-fix button[class*="bg-[#1f1f24]"] * {
-          color: #ffffff !important;
-        }
-
-        .bg-gray-100,
-        .bg-white {
-          color: #111827 !important;
-        }
-
-        .bg-gray-100 p,
-        .bg-gray-100 h1,
-        .bg-gray-100 h2,
-        .bg-gray-100 h3,
-        .bg-gray-100 label,
-        .bg-white p,
-        .bg-white h1,
-        .bg-white h2,
-        .bg-white h3,
-        .bg-white label {
-          color: #111827 !important;
-        }
-
-        input,
-        textarea,
-        input.bg-gray-100,
-        textarea.bg-gray-100 {
-          color: #111827 !important;
-          background-color: #f3f4f6 !important;
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-          color: #6b7280 !important;
-          opacity: 1 !important;
-        }
-
-        .text-emerald-400 {
-          color: #10b981 !important;
-        }
-
-        .text-red-400 {
-          color: #f87171 !important;
-        }
-
-        .text-yellow-400 {
-          color: #eab308 !important;
-        }
-
-        .text-purple-400 {
-          color: #c084fc !important;
-        }
-
-        .text-cyan-400,
-        .text-cyan-300 {
-          color: #06b6d4 !important;
-        }
-
-        .savewise-light-fix p,
-        .savewise-light-fix h1,
-        .savewise-light-fix h2,
-        .savewise-light-fix h3,
-        .savewise-light-fix button p {
-          color: #000000 !important;
-        }
-
-        .savewise-light-fix .text-emerald-400 {
-          color: #10b981 !important;
-        }
-
-        .savewise-light-fix .text-red-400 {
-          color: #f87171 !important;
-        }
-
-        .savewise-light-fix .text-yellow-400 {
-          color: #eab308 !important;
-        }
-
-        .savewise-light-fix .text-purple-400 {
-          color: #c084fc !important;
-        }
-
-        .savewise-light-fix .text-cyan-400,
-        .savewise-light-fix .text-cyan-300 {
-          color: #06b6d4 !important;
-        }
-      `}</style>
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
           <div className="relative w-44 h-44 flex items-center justify-center">
@@ -877,7 +763,7 @@ setSpentThisMonth(0);
   className={
     "min-h-screen p-6 pb-32 " +
     (isLightMode
-      ? "savewise-light-fix bg-gray-100 text-black"
+      ? "bg-gray-100 text-white"
       : "bg-[#050816] text-white")
   }
 >
@@ -996,7 +882,7 @@ setSpentThisMonth(0);
                       }
                     }, 50);
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
                   <span className="text-white"><span className="text-white">← Zurück zur Übersicht</span></span>
                 </button>
@@ -1120,7 +1006,7 @@ setSpentThisMonth(0);
                 <p className="text-white mt-2">Ausgegeben: {spentThisMonth}€</p>
 
                 <p className="text-emerald-400 font-black text-3xl mt-4">
-                  Vom Ausgabenlimit übrig: {(monthlyBudget - spentThisMonth).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                  Vom Ausgabenlimit übrig: {monthlyBudget - spentThisMonth}€
                 </p>
 
                 <div className="w-full h-5 bg-gray-100 rounded-full mt-6 overflow-hidden">
@@ -1201,15 +1087,10 @@ setSpentThisMonth(0);
                     key={item.key}
                     type="button"
                     onClick={() => setAnalyseSection(item.key)}
-                    className={
-                      "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                      (isLightMode
-                        ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                        : "bg-white/5 text-white border-white/10")
-                    }
+                    className="rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] bg-white/5 text-white border-white/10"
                   >
-                    <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                    <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
+                    <p className="text-xl font-black">{item.label}</p>
+                    <p className={homeSection === item.key ? "mt-1 text-white" : isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
                   </button>
                 ))}
               </div>
@@ -1223,7 +1104,7 @@ setSpentThisMonth(0);
                     setAnalyseSection("menu");
                     window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
                   <span className="text-white"><span className="text-white">← Zurück zur Analyse</span></span>
                 </button>
@@ -1241,7 +1122,7 @@ setSpentThisMonth(0);
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="z.B. Wie spare ich mehr Geld?"
-                  className="flex-1 bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none text-black placeholder:text-gray-500 focus:border-emerald-400 transition-all"
+                  className="flex-1 bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none"
                 />
 
                 <button
@@ -1640,7 +1521,7 @@ setSpentThisMonth(0);
                     </div>
 
                     <p className={item.amount >= 0 ? "text-emerald-400 font-black" : "text-red-400 font-black"}>
-                      {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                      {item.amount}€
                     </p>
                   </div>
                 ))}
@@ -1679,15 +1560,10 @@ setSpentThisMonth(0);
                       key={item.key}
                       type="button"
                       onClick={() => setReportSection(item.key)}
-                      className={
-                        "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                        (isLightMode
-                          ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                          : "bg-white/5 text-white border-white/10")
-                      }
+                      className="rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] bg-white/5 text-white border-white/10"
                     >
-                      <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                      <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
+                      <p className="text-xl font-black">{item.label}</p>
+                      <p className={homeSection === item.key ? "mt-1 text-white" : isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
                     </button>
                   ))}
                 </div>
@@ -1702,7 +1578,7 @@ setSpentThisMonth(0);
                     setReportSection("menu");
                     window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
                   <span className="text-white">← Zurück</span> zum Report
                 </button>
@@ -1844,7 +1720,7 @@ setSpentThisMonth(0);
                       setManualSaved(true);
                     }
                   }}
-                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black active:scale-[0.98] transition-all duration-300"
+                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black"
                 >
                   Daten speichern
                 </button>
@@ -1873,141 +1749,42 @@ setSpentThisMonth(0);
       
       {showIntro && !showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center animate-[fadeIn_0.35s_ease-out] shadow-emerald-400/10">
-            <div className="text-6xl mb-4">
-              {["💸", "🏠", "📊", "🤖", "📄", "🎯", "⚙️"][introStep]}
+          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
+            <div className="text-7xl mb-6">
+              {["💸", "📊", "🎯", "🤖"][introStep]}
             </div>
 
-            <p className="text-emerald-300 text-xs font-black tracking-[0.25em] uppercase mb-3">
-              Schritt {introStep + 1} von 7
-            </p>
-
-            <h2 className="text-3xl font-black text-white leading-tight">
+            <h2 className="text-4xl font-black text-white">
               {[
                 "Willkommen bei SaveWise AI",
-                "Startseite",
-                "Analyse",
-                "AI Assistent",
-                "Report",
-                "Budget & Sparziel",
-                "Einstellungen"
+                "Finanzen verstehen",
+                "Sparziele erreichen",
+                "KI-Unterstützung nutzen"
               ][introStep]}
             </h2>
 
-            <p className="text-white mt-5 text-base leading-relaxed">
+            <p className="text-white mt-5 text-lg leading-relaxed">
               {[
-                "Dein Finanzdashboard für Budget, Sparen und KI-gestützte Auswertung.",
-                "Hier siehst du deine wichtigsten Werte: Sparen, Score, Kategorie, Einkommen und Ausgaben.",
-                "Hier findest du Smart Insights, Transaktionen und automatische Auswertungen.",
-                "Stelle Fragen zu Budget, Ausgaben, Sparscore oder Sparpotenzial.",
-                "Lade Dateien hoch, trage Daten manuell ein oder erstelle einen PDF-Report.",
-                "Setze Limits, verfolge Ziele und erkenne deinen Fortschritt.",
-                "Wechsle den Modus, exportiere Daten oder setze die App zurück."
+                "SaveWise AI hilft dir, Budget, Ausgaben und Sparziele smarter zu verwalten.",
+                "Behalte Einnahmen, Ausgaben, Sparquote, Monatsbudget und Trends im Blick.",
+                "Lege Sparziele fest und verfolge deinen Fortschritt Schritt für Schritt.",
+                "Nutze KI-Empfehlungen, um Sparene zu erkennen und bessere Entscheidungen zu treffen."
               ][introStep]}
             </p>
 
-            <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-4">
-              {introStep === 0 && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-emerald-400/20 p-3">
-                    <p className="text-xs text-emerald-300 font-black">SPAREN</p>
-                    <p className="text-white font-black mt-2">155€</p>
-                  </div>
-                  <div className="rounded-2xl bg-cyan-400/20 p-3">
-                    <p className="text-xs text-cyan-300 font-black">SCORE</p>
-                    <p className="text-white font-black mt-2">5/100</p>
-                  </div>
-                  <div className="rounded-2xl bg-purple-400/20 p-3">
-                    <p className="text-xs text-purple-300 font-black">KI</p>
-                    <p className="text-white font-black mt-2">Insight</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 1 && (
-                <div className="grid grid-cols-2 gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Einkommen</p>
-                    <p className="text-emerald-300 font-black mt-2">3.743€</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Ausgaben</p>
-                    <p className="text-red-300 font-black mt-2">1.577€</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 2 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Smart Insights</p>
-                    <p className="text-gray-300 text-sm mt-1">Empfehlungen & Trends</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Transaktionen</p>
-                    <p className="text-gray-300 text-sm mt-1">Buchungen prüfen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 3 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-emerald-300 font-black">Beispielfrage</p>
-                  <p className="text-white mt-2">„Wie kann ich diesen Monat mehr sparen?“</p>
-                </div>
-              )}
-
-              {introStep === 4 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Datei-Upload</p>
-                    <p className="text-gray-300 text-sm mt-1">PDF, CSV oder Screenshot</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">PDF-Report</p>
-                    <p className="text-gray-300 text-sm mt-1">Finanzreport erstellen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 5 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-white font-black">Sparziel Urlaub</p>
-                  <div className="mt-3 h-3 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-[35%] bg-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-emerald-300 font-black mt-3">35% erreicht</p>
-                </div>
-              )}
-
-              {introStep === 6 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Modus wechseln</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Daten exportieren</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">App zurücksetzen</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-2 mt-7">
-              {[0,1,2,3,4,5,6].map((i) => (
+            <div className="flex justify-center gap-2 mt-8">
+              {[0,1,2,3].map((i) => (
                 <div
                   key={i}
                   className={
                     "h-2 rounded-full transition-all " +
-                    (introStep === i ? "w-9 bg-emerald-400" : "w-2 bg-white/20")
+                    (introStep === i ? "w-10 bg-emerald-400" : "w-2 bg-white/20")
                   }
                 />
               ))}
             </div>
 
-            <div className="flex gap-3 mt-8">
+            <div className="flex gap-3 mt-10">
               <button
                 type="button"
                 onClick={() => {
@@ -2015,7 +1792,7 @@ setSpentThisMonth(0);
                   setShowIntro(false);
                   setIntroStep(0);
                 }}
-                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black active:scale-[0.98] transition-all"
+                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black"
               >
                 Überspringen
               </button>
@@ -2023,7 +1800,7 @@ setSpentThisMonth(0);
               <button
                 type="button"
                 onClick={() => {
-                  if (introStep < 6) {
+                  if (introStep < 3) {
                     setIntroStep(introStep + 1);
                   } else {
                     localStorage.setItem("savewise_intro_seen", "true");
@@ -2031,88 +1808,112 @@ setSpentThisMonth(0);
                     setIntroStep(0);
                   }
                 }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all savewise-glow"
+                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black"
               >
-                {introStep < 6 ? "Weiter" : "Loslegen"}
+                {introStep < 3 ? "Weiter" : "Loslegen"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-     {showSettings && (
-  <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-center justify-center p-6">
-    <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[34px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <h2 className="text-4xl font-black text-black">
-        Einstellungen
-      </h2>
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 overflow-y-auto p-6 pt-10 pb-32 flex items-start justify-center">
+          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[28px] p-5 shadow-2xl my-6">
+            <h2 className="text-4xl font-black">Einstellungen</h2>
 
-      <p className="text-black mt-3">
-        Verwalte deine App-Daten und Optionen.
-      </p>
+            <p className="text-white mt-3">
+              Verwalte deine App-Daten und Optionen.
+            </p>
 
-      <div className="space-y-4 mt-8">
-        <button
-          type="button"
-          onClick={resetAllData}
-          className="w-full bg-red-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Alle App-Daten löschen
-        </button>
+            <div className="space-y-4 mt-8">
+              <button
+                type="button"
+                onClick={resetAllData}
+                className="w-full bg-red-400 text-white rounded-2xl p-4 font-black"
+              >
+                Alle App-Daten löschen
+              </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem("savewise_budget", "1200");
-            setMonthlyBudget(1200);
-            setBudgetInput("1200");
-            setShowSettings(false);
-          }}
-          className="w-full bg-yellow-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Nur Budget zurücksetzen
-        </button>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("savewise_budget", "1200");
+                  setMonthlyBudget(1200);
+                  setBudgetInput("1200");
+                  setShowSettings(false);
+                }}
+                className="w-full bg-yellow-400 text-white rounded-2xl p-4 font-black"
+              >
+               Nur Budget zurücksetzen
+              </button>
 
-        <button
-          type="button"
-          onClick={exportData}
-          className="w-full bg-cyan-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Daten exportieren
-        </button>
+              <button
+                type="button"
+                onClick={exportData}
+                className="w-full bg-cyan-400 text-white rounded-2xl p-4 font-black"
+              >
+                Daten exportieren
+              </button>
 
-        <button
-          type="button"
-          onClick={() => setIsLightMode(!isLightMode)}
-          className="w-full bg-gray-200 text-black rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          {isLightMode ? "Dark Mode aktivieren" : "Light Mode aktivieren"}
-        </button>
+<button
+  type="button"
+  onClick={() => setIsLightMode(!isLightMode)}
+  className="w-full bg-gray-200 text-white rounded-2xl p-4 font-black"
+>
+  {isLightMode ? "Dark Mode aktivieren" : "Light Mode aktivieren"}
+</button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setIntroStep(0);
-            setShowIntro(true);
-          }}
-          className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Einführung erneut ansehen
-        </button>
+<div className="bg-gray-100 rounded-2xl p-5 text-gray-300">
+  SaveWise AI MVP · Lokale Demo-Version
+</div>
 
-        <button
-          type="button"
-          onClick={() => setShowSettings(false)}
-          className="w-full bg-black text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Schließen
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              
+              <div className="bg-gray-100 rounded-3xl p-6 text-white">
+                <h3 className="text-xl font-black mb-3">
+                  Was kann SaveWise AI?
+                </h3>
 
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/85 border border-white/20 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl shadow-black/50 z-50">
+                <p className="text-gray-600 leading-relaxed">
+                  SaveWise AI hilft dir, deine Finanzen besser zu verstehen,
+                  Budgets zu kontrollieren, Sparziele zu verfolgen und deine
+                  Ausgaben mit KI-gestützten Empfehlungen zu optimieren.
+                </p>
+
+                <div className="grid gap-2 mt-5 text-sm font-bold text-white">
+                  <p>✅ Monatsbudget & Ausgabenlimit</p>
+                  <p>✅ Sparziele mit Fortschritt</p>
+                  <p>✅ Finanztrend & Diagramme</p>
+                  <p>✅ KI-Finanzassistent</p>
+                  <p>✅ Backup Export</p>
+                  <p>✅ Premium Android-App Erlebnis</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIntroStep(0);
+                  setShowIntro(true);
+                }}
+                className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
+              >
+                Einführung erneut ansehen
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="w-full bg-white text-white rounded-2xl p-4 font-black"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-200 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl z-50">
         <NavButton active={activeTab === "home"} onClick={() => { setShowSettings(false); setActiveTab("home"); }}>
           <Home size={28} />
         </NavButton>
@@ -2144,7 +1945,7 @@ function Header(props: {
   topCategory: string;
 }) {
   return (
-    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[38px] p-10 shadow-2xl shadow-emerald-500/15">
+    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[36px] p-10 shadow-2xl shadow-emerald-500/10">
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl" />
       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
 
@@ -2158,32 +1959,31 @@ function Header(props: {
             className="relative w-64 h-64 rounded-[46px] object-cover shadow-2xl shadow-emerald-400/30"
           />
         </div>
-
-        <div className="mt-6 w-full max-w-3xl rounded-[34px] bg-white/75 p-5 backdrop-blur-xl shadow-2xl shadow-emerald-400/10">
+<div className="mt-6 w-full max-w-3xl rounded-[30px] border border-white/10 bg-white/70 p-4 backdrop-blur-xl shadow-2xl shadow-emerald-400/10 text-white">
           <div className="grid grid-cols-3 gap-2">
-            <div className="min-h-[132px] rounded-[28px] border border-emerald-200 bg-emerald-100 px-2 py-4 flex flex-col items-center justify-center text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-400">
+            <div className="rounded-[22px] border border-emerald-400/20 bg-emerald-400/25 px-3 py-5 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-300">
                 Sparen
               </p>
-              <p className="mt-4 text-2xl font-black text-black leading-none">
+              <p className="mt-2 text-lg font-black text-black whitespace-nowrap">
                 {props.monthlySavings}€
               </p>
             </div>
 
-            <div className="min-h-[132px] rounded-[28px] border border-cyan-200 bg-cyan-100 px-2 py-4 flex flex-col items-center justify-center text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-400">
+            <div className="rounded-[22px] border border-cyan-400/20 bg-cyan-400/25 px-3 py-5 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-cyan-300">
                 Score
               </p>
-              <p className="mt-4 text-2xl font-black text-black leading-none">
+              <p className="mt-2 text-lg font-black text-black whitespace-nowrap">
                 {props.savingScore}/100
               </p>
             </div>
 
-            <div className="min-h-[132px] rounded-[28px] border border-fuchsia-200 bg-fuchsia-100 px-2 py-4 flex flex-col items-center justify-center text-center overflow-hidden">
-              <p className="text-[10px] font-black uppercase tracking-[0.04em] text-fuchsia-400">
+            <div className="rounded-[22px] border border-purple-400/20 bg-purple-400/25 px-3 py-5 text-center">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-purple-300">
                 Kategorie
               </p>
-              <p className="mt-3 w-full text-center text-[13px] font-black text-black leading-tight whitespace-nowrap">
+              <p className="mt-2 text-sm font-black text-black whitespace-nowrap">
                 {props.topCategory}
               </p>
             </div>
@@ -2202,11 +2002,7 @@ function Card(props: { title: string; value: string; color: string; note?: strin
       className={
         "relative overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
         (isAI
-          ? props.isLightMode
-            ? "border-cyan-300 bg-cyan-100/80 shadow-cyan-200/40"
-            : "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
-          : props.isLightMode
-          ? "border-gray-200 bg-white/90 shadow-black/10"
+          ? "border-cyan-400/30 bg-cyan-400/25 shadow-cyan-400/10"
           : "border-white/10 bg-white/5 shadow-black/30")
       }
     >
@@ -2218,17 +2014,7 @@ function Card(props: { title: string; value: string; color: string; note?: strin
       )}
 
       <div className="relative">
-        <p
-          className={
-            isAI
-              ? props.isLightMode
-                ? "text-sm font-bold text-cyan-700"
-                : "text-sm font-bold text-cyan-300"
-              : props.isLightMode
-              ? "text-sm font-semibold text-black"
-              : "text-sm font-medium text-white"
-          }
-        >
+        <p className={isAI ? "text-sm font-bold text-cyan-300" : "text-sm font-medium text-white"}>
           {props.title}
         </p>
 
@@ -2237,13 +2023,7 @@ function Card(props: { title: string; value: string; color: string; note?: strin
         </h2>
 
         {isAI && (
-          <p
-            className={
-              props.isLightMode
-                ? "mt-3 text-xs leading-relaxed text-slate-800"
-                : "mt-3 text-xs leading-relaxed text-cyan-100/80"
-            }
-          >
+          <p className={props.isLightMode ? "mt-3 text-xs leading-relaxed text-slate-700" : "mt-3 text-xs leading-relaxed text-cyan-100/70"}>
             {props.note || "Automatisch aus deinen aktuellen Finanzdaten erkannt."}
           </p>
         )}
@@ -2258,7 +2038,7 @@ function Panel(props: {
   isLightMode?: boolean;
 }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-[34px] p-7 backdrop-blur-2xl shadow-2xl shadow-black/30">
+    <div className="bg-white/5 border border-white/10 rounded-[32px] p-7 backdrop-blur-2xl shadow-xl shadow-black/25">
       <h2
         className={
           props.isLightMode ? "text-4xl font-black text-white" : "text-4xl font-black text-white"

@@ -7,34 +7,56 @@ on:
       - main
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout project
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
+          node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Build Next app
-        run: npm run build -- --webpack
+        run: npm run build
 
-      - name: Sync Capacitor Android
+      - name: Install Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Create Capacitor config
+        run: |
+          cat > capacitor.config.ts <<'CAP'
+          import type { CapacitorConfig } from '@capacitor/cli';
+
+          const config: CapacitorConfig = {
+            appId: 'com.savewise.ai',
+            appName: 'SaveWise AI',
+            webDir: 'out',
+            server: {
+              androidScheme: 'https'
+            }
+          };
+
+          export default config;
+          CAP
+
+      - name: Export static Next app
+        run: |
+          npx next build
+          npx next export || true
+
+      - name: Add Android
+        run: npx cap add android
+
+      - name: Sync Android
         run: npx cap sync android
 
-      - name: Build debug APK
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
@@ -43,5 +65,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: SaveWiseAI-debug-apk
+          name: SaveWise-AI-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

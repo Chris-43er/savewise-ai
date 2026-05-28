@@ -720,20 +720,6 @@ setSpentThisMonth(0);
     <>
 
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes softPulse {
-          0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0.0); }
-          50% { box-shadow: 0 0 35px rgba(16,185,129,0.22); }
-        }
-
-        .savewise-glow {
-          animation: softPulse 2.4s ease-in-out infinite;
-        }
-
         /* FINAL CONTRAST FIX */
         .savewise-light-fix h1,
         .savewise-light-fix h2,
@@ -1873,7 +1859,7 @@ setSpentThisMonth(0);
       
       {showIntro && !showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center animate-[fadeIn_0.35s_ease-out] shadow-emerald-400/10">
+          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
             <div className="text-6xl mb-4">
               {["💸", "🏠", "📊", "🤖", "📄", "🎯", "⚙️"][introStep]}
             </div>
@@ -2031,7 +2017,7 @@ setSpentThisMonth(0);
                     setIntroStep(0);
                   }
                 }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all savewise-glow"
+                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all"
               >
                 {introStep < 6 ? "Weiter" : "Loslegen"}
               </button>

@@ -114,14 +114,13 @@ const [savedAmount, setSavedAmount] = useState(0);
     localStorage.setItem(
       "savewise_data",
       JSON.stringify({
-  savingScore,
-  monthlySavings,
-  spentThisMonth,
-  monthlyIncome,
-  topCategory,
-  history,
-  transactions
-})
+        savingScore,
+        monthlySavings,
+        spentThisMonth,
+        topCategory,
+        history,
+        transactions
+      })
     );
   }, [savingScore, monthlySavings, spentThisMonth, topCategory, history, transactions]);
 
@@ -151,7 +150,7 @@ setTimeout(() => {
 
   } else if (text.includes("sparen") || text.includes("300")) {
     setChatReply(
-      `Aktuell liegt dein Sparen bei ca. ${monthlySavings}€. Um mehr zu sparen, prüfe zuerst ${topCategory}, Abos und spontane Ausgaben.`
+      `Aktuell liegt dein Sparpotenzial bei ca. ${monthlySavings}€. Um mehr zu sparen, prüfe zuerst ${topCategory}, Abos und spontane Ausgaben.`
     );
 
   } else if (text.includes("abo") || text.includes("streaming")) {
@@ -305,41 +304,6 @@ async function analyzePdf(file: File) {
   } catch (error) {
     console.error("PDF Analyse Fehler:", error);
     setUploadStatus("PDF konnte nicht analysiert werden. Bitte manuell eintragen.");
-  }
-}
-
-
-
-async function analyzeImage(file: File) {
-  try {
-    setUploadStatus("Bild wird per OCR gelesen...");
-
-    const Tesseract = await import("tesseract.js");
-    const result = await Tesseract.recognize(file, "deu+eng");
-
-    const found = result.data.text.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-    const values = found
-      .map((v) => Number(v.replace(/\./g, "").replace(",", ".")))
-      .filter((v) => !isNaN(v) && Math.abs(v) > 0 && Math.abs(v) < 10000);
-
-    const income = Math.round(values.filter((v) => v > 0).reduce((a, b) => a + b, 0) * 100) / 100;
-    const expenses = Math.round(Math.abs(values.filter((v) => v < 0).reduce((a, b) => a + b, 0)) * 100) / 100;
-
-    setMonthlyIncome(income);
-    setIncomeInput(income > 0 ? income.toFixed(2) : "");
-    setSpentThisMonth(expenses);
-    setExpenseInput(expenses > 0 ? expenses.toFixed(2) : "");
-
-    setTransactions([
-      ...(income > 0 ? [{ name: "OCR Einnahmen", amount: income, category: "Einkommen" }] : []),
-      ...(expenses > 0 ? [{ name: "OCR Ausgaben", amount: -expenses, category: "Ausgaben" }] : [])
-    ]);
-
-    setUploadStatus("Bild analysiert: Einnahmen " + income.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + "€, Ausgaben " + expenses.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + "€.");
-  } catch (error) {
-    console.error("OCR Fehler:", error);
-    setUploadStatus("Bild konnte nicht automatisch gelesen werden. Bitte Werte manuell eintragen.");
   }
 }
 
@@ -548,28 +512,22 @@ ${smartTip}`;
   }
 
   function resetAllData() {
-  localStorage.removeItem("savewise_data");
-  localStorage.setItem("savewise_budget", "1200");
+    localStorage.removeItem("savewise_data");
+    localStorage.setItem("savewise_budget", "1200");
 
-  setSavingScore(0);
-  setMonthlySavings(0);
-  setMonthlyBudget(1200);
-  setBudgetInput("1200");
-
-  setMonthlyIncome(0);
-setIncomeInput("");
-
-setSpentThisMonth(0);
-
-  setSpentThisMonth(0);
-  setTopCategory("Streaming");
-  setHistory([]);
-  setTransactions(defaultTransactions);
-  setUploadedFile("");
-  setUploadStatus("");
-  setAnalysisResult("");
-  setShowSettings(false);
-}
+    setSavingScore(0);
+    setMonthlySavings(120);
+    setMonthlyBudget(1200);
+    setBudgetInput("1200");
+    setSpentThisMonth(0);
+    setTopCategory("Streaming");
+    setHistory([]);
+    setTransactions(defaultTransactions);
+    setUploadedFile("");
+    setUploadStatus("");
+    setAnalysisResult("");
+    setShowSettings(false);
+  }
 
 
   useEffect(() => {
@@ -676,162 +634,8 @@ setSpentThisMonth(0);
     URL.revokeObjectURL(url);
   }
 
-  const spendingRatio =
-    monthlyBudget > 0 ? Math.round((spentThisMonth / monthlyBudget) * 100) : 0;
-
-  const savingsRate =
-    monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) : 0;
-
-  const aiInsight =
-    transactions.length === 0
-      ? "Datenbasis fehlt"
-      : spentThisMonth > monthlyBudget
-      ? "Budget kritisch"
-      : savingsRate >= 30
-      ? "Starke Sparquote"
-      : topCategory === "Streaming"
-      ? "Abo-Check empfohlen"
-      : topCategory === "Shopping"
-      ? "Kaufverhalten prüfen"
-      : topCategory === "Essen"
-      ? "Essensbudget prüfen"
-      : spendingRatio > 80
-      ? "Ausgaben im Blick"
-      : monthlySavings > 250
-      ? "Sparpotenzial erkannt"
-      : "Finanzen stabil";
-
-  const aiRecommendation =
-    transactions.length === 0
-      ? "Lade einen Kontoauszug hoch, damit SaveWise echte Muster erkennt."
-      : spentThisMonth > monthlyBudget
-      ? "Du liegst über deinem Monatsbudget. Prüfe zuerst flexible Ausgaben."
-      : savingsRate >= 30
-      ? "Sehr gut: Deine Sparquote ist stark. Halte diesen Kurs."
-      : topCategory === "Streaming"
-      ? "Prüfe Abos, Testphasen und doppelte Streaming-Dienste."
-      : topCategory === "Shopping"
-      ? "Setze ein Wochenlimit für spontane Käufe."
-      : topCategory === "Essen"
-      ? "Plane 2–3 Mahlzeiten vor, um Ausgaben zu glätten."
-      : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben.";
-
   return (
     <>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(18px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        @keyframes softPulse {
-          0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0.0); }
-          50% { box-shadow: 0 0 35px rgba(16,185,129,0.22); }
-        }
-
-        .savewise-glow {
-          animation: softPulse 2.4s ease-in-out infinite;
-        }
-
-        /* FINAL CONTRAST FIX */
-        .savewise-light-fix h1,
-        .savewise-light-fix h2,
-        .savewise-light-fix h3,
-        .savewise-light-fix label,
-        .savewise-light-fix p {
-          color: #000000 !important;
-        }
-
-        .savewise-light-fix button[class*="bg-black"],
-        .savewise-light-fix button[class*="bg-black"] *,
-        .savewise-light-fix button[class*="bg-[#1f1f24]"],
-        .savewise-light-fix button[class*="bg-[#1f1f24]"] * {
-          color: #ffffff !important;
-        }
-
-        .bg-gray-100,
-        .bg-white {
-          color: #111827 !important;
-        }
-
-        .bg-gray-100 p,
-        .bg-gray-100 h1,
-        .bg-gray-100 h2,
-        .bg-gray-100 h3,
-        .bg-gray-100 label,
-        .bg-white p,
-        .bg-white h1,
-        .bg-white h2,
-        .bg-white h3,
-        .bg-white label {
-          color: #111827 !important;
-        }
-
-        input,
-        textarea,
-        input.bg-gray-100,
-        textarea.bg-gray-100 {
-          color: #111827 !important;
-          background-color: #f3f4f6 !important;
-        }
-
-        input::placeholder,
-        textarea::placeholder {
-          color: #6b7280 !important;
-          opacity: 1 !important;
-        }
-
-        .text-emerald-400 {
-          color: #10b981 !important;
-        }
-
-        .text-red-400 {
-          color: #f87171 !important;
-        }
-
-        .text-yellow-400 {
-          color: #eab308 !important;
-        }
-
-        .text-purple-400 {
-          color: #c084fc !important;
-        }
-
-        .text-cyan-400,
-        .text-cyan-300 {
-          color: #06b6d4 !important;
-        }
-
-        .savewise-light-fix p,
-        .savewise-light-fix h1,
-        .savewise-light-fix h2,
-        .savewise-light-fix h3,
-        .savewise-light-fix button p {
-          color: #000000 !important;
-        }
-
-        .savewise-light-fix .text-emerald-400 {
-          color: #10b981 !important;
-        }
-
-        .savewise-light-fix .text-red-400 {
-          color: #f87171 !important;
-        }
-
-        .savewise-light-fix .text-yellow-400 {
-          color: #eab308 !important;
-        }
-
-        .savewise-light-fix .text-purple-400 {
-          color: #c084fc !important;
-        }
-
-        .savewise-light-fix .text-cyan-400,
-        .savewise-light-fix .text-cyan-300 {
-          color: #06b6d4 !important;
-        }
-      `}</style>
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
           <div className="relative w-44 h-44 flex items-center justify-center">
@@ -867,7 +671,7 @@ setSpentThisMonth(0);
 
 
 
-          <p className="mt-4 text-white text-sm">
+          <p className="mt-4 text-gray-400 text-sm">
             Lade Premium Dashboard...
           </p>
         </div>
@@ -877,20 +681,20 @@ setSpentThisMonth(0);
   className={
     "min-h-screen p-6 pb-32 " +
     (isLightMode
-      ? "savewise-light-fix bg-gray-100 text-black"
-      : "bg-[#050816] text-white")
+      ? "bg-gray-100 text-gray-900"
+      : "bg-[#050816] text-gray-900")
   }
 >
-      <div className="max-w-5xl mx-auto space-y-1">
-        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
+      <div className="max-w-5xl mx-auto">
+        {homeSection === "overview" && activeTab === "home" && <Header />}
 
         {activeTab === "home" && (
-          <div className="space-y-6 mt-6">
+          <div className="space-y-8 mt-8">
             {homeSection === "overview" && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card isLightMode={isLightMode} title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card isLightMode={isLightMode} title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-              <Card isLightMode={isLightMode}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
+              <Card title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
+              <Card
                 title="Übrig"
                 value={
                   Number.isFinite(monthlyIncome) && Number.isFinite(spentThisMonth) && monthlyIncome > 0
@@ -899,13 +703,8 @@ setSpentThisMonth(0);
                 }
                 color="text-yellow-400"
               />
-              <Card isLightMode={isLightMode}
-                title="KI Insight"
-                value={aiInsight}
-                color="text-cyan-400"
-                note={aiRecommendation}
-              />
-              <Card isLightMode={isLightMode} title="Sparquote" value={transactions.length > 0 && monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) + "%" : "—"} color="text-purple-400" />
+              <Card title="Sparscore" value={transactions.length > 0 && savingScore > 0 ? savingScore + "/100" : "—"} color="text-cyan-400" />
+              <Card title="Sparquote" value={transactions.length > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
             )}
 
@@ -952,28 +751,20 @@ setSpentThisMonth(0);
                     }, 50);
                   }}
       className={
-        "relative overflow-hidden rounded-[28px] border p-4 text-left transition-all duration-300 active:scale-[0.98] shadow-xl " +
+        "rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] " +
         (homeSection === item.key
-          ? "bg-emerald-400 text-black border-emerald-300 shadow-2xl shadow-emerald-400/25"
-          : isLightMode ? "bg-white/80 text-black border-gray-200 shadow-black/10" : "bg-white/5 text-white border-white/10 shadow-black/20")
+          ? "bg-emerald-400 text-black border-emerald-300 shadow-2xl shadow-emerald-400/20"
+          : "bg-white/5 text-white border-white/10")
       }
     >
-      <p
-        className={
-          homeSection === item.key
-            ? "text-xl font-black text-black"
-            : isLightMode
-            ? "text-xl font-black text-black"
-            : isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"
-        }
-      >
+      <p className="text-2xl font-black">
         {item.label}
       </p>
 
       <p className={
         homeSection === item.key
-          ? "mt-2 text-white"
-          : isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"
+          ? "mt-2 text-black/70"
+          : "mt-2 text-gray-400"
       }>
         {item.text}
       </p>
@@ -996,9 +787,9 @@ setSpentThisMonth(0);
                       }
                     }, 50);
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
-                  <span className="text-white"><span className="text-white">← Zurück zur Übersicht</span></span>
+                  ← Zurück zur Übersicht
                 </button>
               </div>
             )}
@@ -1010,10 +801,10 @@ setSpentThisMonth(0);
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
                   <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
                   <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-                  <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) + "%"} color="text-purple-400" />
+                  <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100)) + "%"} color="text-purple-400" />
                 </div>
 
-                <div className="mt-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-white">
+                <div className="mt-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-black">
                   <p className="font-black text-xl">
                     {spentThisMonth < 1200
                       ? "Sehr guter Monat"
@@ -1022,7 +813,7 @@ setSpentThisMonth(0);
                         : "Achtung: hohe Ausgaben"}
                   </p>
 
-                  <p className="mt-2 text-white">
+                  <p className="mt-2 text-black/70">
                     Deine aktuelle Sparquote liegt bei {Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100))}%.
                   </p>
                 </div>
@@ -1033,7 +824,7 @@ setSpentThisMonth(0);
 <Panel isLightMode={isLightMode} title="Sparziel">
   <div className="grid gap-5 mt-6">
     <div>
-      <p className="text-sm font-bold text-gray-300 mb-2">Zielname</p>
+      <p className="text-sm font-bold text-gray-500 mb-2">Zielname</p>
       <input
         value={savingGoal}
         onChange={(e) => setSavingGoal(e.target.value)}
@@ -1043,7 +834,7 @@ setSpentThisMonth(0);
     </div>
 
     <div>
-      <p className="text-sm font-bold text-gray-300 mb-2">Zielbetrag</p>
+      <p className="text-sm font-bold text-gray-500 mb-2">Zielbetrag</p>
       <input
         type="number"
         value={goalAmount || ""}
@@ -1057,7 +848,7 @@ setSpentThisMonth(0);
     </div>
 
     <div>
-      <p className="text-sm font-bold text-gray-300 mb-2">Gesparter Betrag</p>
+      <p className="text-sm font-bold text-gray-500 mb-2">Gesparter Betrag</p>
       <input
         type="number"
         value={savedAmount || ""}
@@ -1116,11 +907,11 @@ setSpentThisMonth(0);
                   </button>
                 </div>
 
-                <p className="text-white mt-6">Ausgabenlimit: {monthlyBudget}€</p>
-                <p className="text-white mt-2">Ausgegeben: {spentThisMonth}€</p>
+                <p className="text-gray-400 mt-6">Ausgabenlimit: {monthlyBudget}€</p>
+                <p className="text-gray-400 mt-2">Ausgegeben: {spentThisMonth}€</p>
 
                 <p className="text-emerald-400 font-black text-3xl mt-4">
-                  Vom Ausgabenlimit übrig: {(monthlyBudget - spentThisMonth).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                  Vom Ausgabenlimit übrig: {monthlyBudget - spentThisMonth}€
                 </p>
 
                 <div className="w-full h-5 bg-gray-100 rounded-full mt-6 overflow-hidden">
@@ -1180,36 +971,40 @@ setSpentThisMonth(0);
             </div>
 
             <div className={homeSection === "overview" ? "block" : "hidden"}>
-            
+            <Panel isLightMode={isLightMode} title="Sparscore Analyse">
+              <div className="flex justify-center mt-8">
+                <div className="w-48 h-48 rounded-full border-[18px] border-emerald-400 flex items-center justify-center shadow-2xl shadow-emerald-400/30">
+                  <div className="text-center">
+                    <p className="text-5xl font-black text-emerald-400">{savingScore}</p>
+                    <p className="text-gray-400 mt-1">von 100</p>
+                  </div>
+                </div>
+              </div>
+            </Panel>
             </div>
           </div>
         )}
 
         {activeTab === "analyse" && (
           <>
-            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
-          <div className="space-y-6 mt-6">
+            {analyseSection === "menu" && <Header />}
+          <div className="space-y-8 mt-8">
 
             {analyseSection === "menu" && (
               <div className="grid gap-4">
                 {[
                   { key: "assistant", label: "AI Finanzassistent", text: "Stelle Fragen zu deinen Finanzen" },
-                  { key: "smart", label: "Smart Insights", text: "Empfehlungen, Sparen, Fixkosten und Trends" },
+                  { key: "smart", label: "Smart Insights", text: "Empfehlungen, Sparpotenzial, Fixkosten und Trends" },
                   { key: "transactions", label: "Transaktionen", text: "Aktuelle Buchungen prüfen" }
                 ].map((item) => (
                   <button
                     key={item.key}
                     type="button"
                     onClick={() => setAnalyseSection(item.key)}
-                    className={
-                      "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                      (isLightMode
-                        ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                        : "bg-white/5 text-white border-white/10")
-                    }
+                    className="rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] bg-white/5 text-white border-white/10"
                   >
-                    <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                    <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
+                    <p className="text-2xl font-black">{item.label}</p>
+                    <p className="mt-2 text-gray-400">{item.text}</p>
                   </button>
                 ))}
               </div>
@@ -1223,9 +1018,9 @@ setSpentThisMonth(0);
                     setAnalyseSection("menu");
                     window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
-                  <span className="text-white"><span className="text-white">← Zurück zur Analyse</span></span>
+                  ← Zurück zur Analyse
                 </button>
               </div>
             )}
@@ -1233,7 +1028,7 @@ setSpentThisMonth(0);
             <div className={analyseSection === "assistant" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="AI Finanzassistent">
               <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 mt-6">
-                <p className="text-white whitespace-pre-line">{chatReply}</p>
+                <p className="text-gray-900 whitespace-pre-line">{chatReply}</p>
               </div>
 
               <div className="flex flex-col md:flex-row gap-4 mt-6">
@@ -1241,7 +1036,7 @@ setSpentThisMonth(0);
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
                   placeholder="z.B. Wie spare ich mehr Geld?"
-                  className="flex-1 bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none text-black placeholder:text-gray-500 focus:border-emerald-400 transition-all"
+                  className="flex-1 bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none"
                 />
 
                 <button
@@ -1293,7 +1088,7 @@ setSpentThisMonth(0);
                   <Info
                     color="cyan"
                     title="Transaktionen erkannt"
-                    text="SaveWise AI analysiert deine Buchungen automatisch für Kategorien, Budget und Sparene."
+                    text="SaveWise AI analysiert deine Buchungen automatisch für Kategorien, Budget und Sparpotenziale."
                   />
                 )}
 
@@ -1301,7 +1096,7 @@ setSpentThisMonth(0);
                   <Info
                     color="emerald"
                     title="Lebensmittel-Ausgaben erkannt"
-                    text="Prüfe wöchentliche Supermarkt-Ausgaben und vergleiche Preise, um zusätzliches Sparen zu nutzen."
+                    text="Prüfe wöchentliche Supermarkt-Ausgaben und vergleiche Preise, um zusätzliches Sparpotenzial zu nutzen."
                   />
                 )}
 
@@ -1398,7 +1193,7 @@ setSpentThisMonth(0);
                 </ResponsiveContainer>
               </div>
 
-              <p className="text-white mt-4">
+              <p className="text-gray-400 mt-4">
                 {transactions.length > 0 ? "Dein Monats-Trend basiert auf deinen hinterlegten Daten." : "Noch keine Daten vorhanden. Trage Daten manuell ein oder lade eine Datei hoch."}
               </p>
             </Panel>
@@ -1485,7 +1280,7 @@ setSpentThisMonth(0);
                     </div>
 
                     <div className="mt-6 bg-gray-100 rounded-3xl p-5">
-                      <p className="text-gray-300 font-bold mb-3">
+                      <p className="text-gray-500 font-bold mb-3">
                         Erkannte Kategorien
                       </p>
 
@@ -1510,7 +1305,7 @@ setSpentThisMonth(0);
 
 
             <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Sparen">
+            <Panel isLightMode={isLightMode} title="Sparpotenzial">
 
               {(() => {
                 const shopping = transactions.filter((t) => t.category === "Shopping").reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -1522,7 +1317,7 @@ setSpentThisMonth(0);
                 return (
                   <div className="space-y-5 mt-6">
                     <Mini
-                      title="Geschätztes Sparen"
+                      title="Geschätztes Sparpotenzial"
                       value={potential > 0 ? potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
                       color="text-emerald-400"
                     />
@@ -1530,14 +1325,14 @@ setSpentThisMonth(0);
                     {potential > 0 ? (
                       <Info
                         color="emerald"
-                        title="Sparen erkannt"
+                        title="Sparpotenzial erkannt"
                         text={"Du könntest geschätzt ca. " + potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ sparen, wenn du Shopping, Streaming und Onlinezahlungen optimierst."}
                       />
                     ) : (
                       <Info
                         color="cyan"
-                        title="Noch kein Sparen berechnet"
-                        text="Lade einen Kontoauszug hoch oder erfasse Ausgaben, damit SaveWise dein Sparen berechnen kann."
+                        title="Noch kein Sparpotenzial berechnet"
+                        text="Lade einen Kontoauszug hoch oder erfasse Ausgaben, damit SaveWise dein Sparpotenzial berechnen kann."
                       />
                     )}
 
@@ -1595,12 +1390,12 @@ setSpentThisMonth(0);
                         return groups;
                       }, {})
                   ).map((item: any, index) => (
-                    <p key={index} className="text-white">
+                    <p key={index} className="text-gray-400">
                       ● {item.name}: {item.value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                     </p>
                   ))
                 ) : (
-                  <p className="text-white">Noch keine Ausgaben vorhanden.</p>
+                  <p className="text-gray-400">Noch keine Ausgaben vorhanden.</p>
                 )}
               </div>
             </Panel>
@@ -1609,7 +1404,7 @@ setSpentThisMonth(0);
             <div className="hidden">
             <Panel isLightMode={isLightMode} title="Monatsübersicht">
               <div className="grid gap-4 mt-6">
-                <Mini title="Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
+                <Mini title="Top Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
                 <Mini title="Analysen" value={history.length > 0 ? String(history.length) : "—"} color="text-emerald-400" />
                 <Mini title="Transaktionen" value={transactions.length > 0 ? String(transactions.length) : "—"} color="text-yellow-400" />
               </div>
@@ -1619,7 +1414,7 @@ setSpentThisMonth(0);
             <div className="hidden">
             <Panel isLightMode={isLightMode} title="Analyse Verlauf">
               <div className="space-y-4 mt-6">
-                {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-300"}>Noch keine Analysen vorhanden.</p>}
+                {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-500"}>Noch keine Analysen vorhanden.</p>}
                 {history.map((item, index) => (
                   <div key={index} className="bg-gray-100 p-4 rounded-2xl text-gray-300">
                     {item}
@@ -1636,11 +1431,11 @@ setSpentThisMonth(0);
                   <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
                     <div>
                       <p className="font-bold">{item.name}</p>
-                      <p className="text-gray-300 text-sm">{item.category}</p>
+                      <p className="text-gray-500 text-sm">{item.category}</p>
                     </div>
 
                     <p className={item.amount >= 0 ? "text-emerald-400 font-black" : "text-red-400 font-black"}>
-                      {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                      {item.amount}€
                     </p>
                   </div>
                 ))}
@@ -1652,9 +1447,9 @@ setSpentThisMonth(0);
         )}
 
         {activeTab === "report" && (
-          <div className="space-y-6 mt-6">
+          <div className="space-y-8 mt-8">
 
-            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
+            {reportSection === "menu" && <Header />}
             {reportSection === "menu" && (
               <>
                 <div className="grid gap-4">
@@ -1679,15 +1474,10 @@ setSpentThisMonth(0);
                       key={item.key}
                       type="button"
                       onClick={() => setReportSection(item.key)}
-                      className={
-                        "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                        (isLightMode
-                          ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                          : "bg-white/5 text-white border-white/10")
-                      }
+                      className="rounded-[28px] border p-6 text-left transition-all active:scale-[0.98] bg-white/5 text-white border-white/10"
                     >
-                      <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                      <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
+                      <p className="text-2xl font-black">{item.label}</p>
+                      <p className="mt-2 text-gray-400">{item.text}</p>
                     </button>
                   ))}
                 </div>
@@ -1702,16 +1492,16 @@ setSpentThisMonth(0);
                     setReportSection("menu");
                     window.scrollTo({ top: 0, behavior: "auto" });
                   }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl"
                 >
-                  <span className="text-white">← Zurück</span> zum Report
+                  ← Zurück zum Report
                 </button>
               </div>
             )}
 
             <div className={reportSection === "upload" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Datei-Upload">
-                <p className="text-white mt-4">
+                <p className="text-gray-400 mt-4">
                   Lade deine Kontoauszüge als PDF oder CSV hoch.
                 </p>
 
@@ -1721,7 +1511,7 @@ setSpentThisMonth(0);
 
                   <input
                     type="file"
-                    accept=".pdf,.csv,.png,.jpg,.jpeg"
+                    accept=".pdf,.csv"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -1735,13 +1525,6 @@ setSpentThisMonth(0);
                       } else if (fileName.toLowerCase().endsWith(".csv")) {
                         setUploadStatus("CSV erkannt. Datei wird analysiert.");
                         if (file) analyzeCsv(file);
-                      } else if (
-                        fileName.toLowerCase().endsWith(".png") ||
-                        fileName.toLowerCase().endsWith(".jpg") ||
-                        fileName.toLowerCase().endsWith(".jpeg")
-                      ) {
-                        setUploadStatus("Bild erkannt. OCR startet...");
-                        if (file) analyzeImage(file);
                       } else {
                         setUploadStatus("Dateiformat erkannt.");
                       }
@@ -1764,14 +1547,14 @@ setSpentThisMonth(0);
                 {uploadedFile && (
                   <button
                     onClick={startAnalysis}
-                    className="mt-6 bg-cyan-400 text-white px-6 py-4 rounded-2xl font-black"
+                    className="mt-6 bg-cyan-400 text-black px-6 py-4 rounded-2xl font-black"
                   >
                     Analyse starten
                   </button>
                 )}
 
                 {analysisResult && (
-                  <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-white font-bold whitespace-pre-line">
+                  <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-gray-900 font-bold whitespace-pre-line">
                     {analysisResult}
                   </div>
                 )}
@@ -1781,14 +1564,14 @@ setSpentThisMonth(0);
             
             <div className={reportSection === "manual" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Manuelle Eingabe">
-                <p className="text-white mt-4">
+                <p className="text-gray-400 mt-4">
                   Trage dein monatliches Einkommen und deine bisherigen Ausgaben manuell ein, falls nichts aus einer Datei erkannt wurde.
                 </p>
 
                 <div className="grid gap-5 mt-6">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="text-sm font-bold text-gray-300">
+                      <p className="text-sm font-bold text-gray-500">
                         Monatliches Einkommen
                       </p>
 
@@ -1801,13 +1584,13 @@ setSpentThisMonth(0);
                       value={incomeInput}
                       onChange={(e) => { setIncomeInput(e.target.value); setManualSaved(false); }}
                       placeholder="z.B. 3200"
-                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-white"
+                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-gray-900"
                     />
                   </div>
 
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="text-sm font-bold text-gray-300">
+                      <p className="text-sm font-bold text-gray-500">
                         Bisherige Ausgaben
                       </p>
 
@@ -1820,7 +1603,7 @@ setSpentThisMonth(0);
                       value={expenseInput}
                       onChange={(e) => { setExpenseInput(e.target.value); setManualSaved(false); }}
                       placeholder="z.B. 840"
-                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-white"
+                      className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-gray-900"
                     />
                   </div>
                 </div>
@@ -1844,7 +1627,7 @@ setSpentThisMonth(0);
                       setManualSaved(true);
                     }
                   }}
-                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black active:scale-[0.98] transition-all duration-300"
+                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black"
                 >
                   Daten speichern
                 </button>
@@ -1853,13 +1636,13 @@ setSpentThisMonth(0);
 
             <div className={reportSection === "pdf" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="PDF-Report">
-                <p className="text-white mt-4">
+                <p className="text-gray-400 mt-4">
                   Erstelle einen professionellen Finanzreport.
                 </p>
 
                 <button
                   onClick={createPdf}
-                  className="mt-6 bg-white text-white px-6 py-4 rounded-2xl font-black"
+                  className="mt-6 bg-white text-black px-6 py-4 rounded-2xl font-black"
                 >
                   PDF erstellen
                 </button>
@@ -1873,141 +1656,42 @@ setSpentThisMonth(0);
       
       {showIntro && !showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center animate-[fadeIn_0.35s_ease-out] shadow-emerald-400/10">
-            <div className="text-6xl mb-4">
-              {["💸", "🏠", "📊", "🤖", "📄", "🎯", "⚙️"][introStep]}
+          <div className="w-full max-w-lg bg-[#111827] border border-white/10 rounded-[36px] p-7 shadow-2xl text-center">
+            <div className="text-7xl mb-6">
+              {["💸", "📊", "🎯", "🤖"][introStep]}
             </div>
 
-            <p className="text-emerald-300 text-xs font-black tracking-[0.25em] uppercase mb-3">
-              Schritt {introStep + 1} von 7
-            </p>
-
-            <h2 className="text-3xl font-black text-white leading-tight">
+            <h2 className="text-4xl font-black text-white">
               {[
                 "Willkommen bei SaveWise AI",
-                "Startseite",
-                "Analyse",
-                "AI Assistent",
-                "Report",
-                "Budget & Sparziel",
-                "Einstellungen"
+                "Finanzen verstehen",
+                "Sparziele erreichen",
+                "KI-Unterstützung nutzen"
               ][introStep]}
             </h2>
 
-            <p className="text-white mt-5 text-base leading-relaxed">
+            <p className="text-gray-400 mt-5 text-lg leading-relaxed">
               {[
-                "Dein Finanzdashboard für Budget, Sparen und KI-gestützte Auswertung.",
-                "Hier siehst du deine wichtigsten Werte: Sparen, Score, Kategorie, Einkommen und Ausgaben.",
-                "Hier findest du Smart Insights, Transaktionen und automatische Auswertungen.",
-                "Stelle Fragen zu Budget, Ausgaben, Sparscore oder Sparpotenzial.",
-                "Lade Dateien hoch, trage Daten manuell ein oder erstelle einen PDF-Report.",
-                "Setze Limits, verfolge Ziele und erkenne deinen Fortschritt.",
-                "Wechsle den Modus, exportiere Daten oder setze die App zurück."
+                "SaveWise AI hilft dir, Budget, Ausgaben und Sparziele smarter zu verwalten.",
+                "Behalte Einnahmen, Ausgaben, Sparquote, Monatsbudget und Trends im Blick.",
+                "Lege Sparziele fest und verfolge deinen Fortschritt Schritt für Schritt.",
+                "Nutze KI-Empfehlungen, um Sparpotenziale zu erkennen und bessere Entscheidungen zu treffen."
               ][introStep]}
             </p>
 
-            <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-4">
-              {introStep === 0 && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-2xl bg-emerald-400/20 p-3">
-                    <p className="text-xs text-emerald-300 font-black">SPAREN</p>
-                    <p className="text-white font-black mt-2">155€</p>
-                  </div>
-                  <div className="rounded-2xl bg-cyan-400/20 p-3">
-                    <p className="text-xs text-cyan-300 font-black">SCORE</p>
-                    <p className="text-white font-black mt-2">5/100</p>
-                  </div>
-                  <div className="rounded-2xl bg-purple-400/20 p-3">
-                    <p className="text-xs text-purple-300 font-black">KI</p>
-                    <p className="text-white font-black mt-2">Insight</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 1 && (
-                <div className="grid grid-cols-2 gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Einkommen</p>
-                    <p className="text-emerald-300 font-black mt-2">3.743€</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Ausgaben</p>
-                    <p className="text-red-300 font-black mt-2">1.577€</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 2 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Smart Insights</p>
-                    <p className="text-gray-300 text-sm mt-1">Empfehlungen & Trends</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Transaktionen</p>
-                    <p className="text-gray-300 text-sm mt-1">Buchungen prüfen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 3 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-emerald-300 font-black">Beispielfrage</p>
-                  <p className="text-white mt-2">„Wie kann ich diesen Monat mehr sparen?“</p>
-                </div>
-              )}
-
-              {introStep === 4 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Datei-Upload</p>
-                    <p className="text-gray-300 text-sm mt-1">PDF, CSV oder Screenshot</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">PDF-Report</p>
-                    <p className="text-gray-300 text-sm mt-1">Finanzreport erstellen</p>
-                  </div>
-                </div>
-              )}
-
-              {introStep === 5 && (
-                <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-white font-black">Sparziel Urlaub</p>
-                  <div className="mt-3 h-3 rounded-full bg-white/10 overflow-hidden">
-                    <div className="h-full w-[35%] bg-emerald-400 rounded-full" />
-                  </div>
-                  <p className="text-emerald-300 font-black mt-3">35% erreicht</p>
-                </div>
-              )}
-
-              {introStep === 6 && (
-                <div className="grid gap-3 text-left">
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Modus wechseln</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Daten exportieren</p>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">App zurücksetzen</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-2 mt-7">
-              {[0,1,2,3,4,5,6].map((i) => (
+            <div className="flex justify-center gap-2 mt-8">
+              {[0,1,2,3].map((i) => (
                 <div
                   key={i}
                   className={
                     "h-2 rounded-full transition-all " +
-                    (introStep === i ? "w-9 bg-emerald-400" : "w-2 bg-white/20")
+                    (introStep === i ? "w-10 bg-emerald-400" : "w-2 bg-white/20")
                   }
                 />
               ))}
             </div>
 
-            <div className="flex gap-3 mt-8">
+            <div className="flex gap-3 mt-10">
               <button
                 type="button"
                 onClick={() => {
@@ -2015,7 +1699,7 @@ setSpentThisMonth(0);
                   setShowIntro(false);
                   setIntroStep(0);
                 }}
-                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black active:scale-[0.98] transition-all"
+                className="flex-1 bg-white/10 text-white rounded-2xl py-4 font-black"
               >
                 Überspringen
               </button>
@@ -2023,7 +1707,7 @@ setSpentThisMonth(0);
               <button
                 type="button"
                 onClick={() => {
-                  if (introStep < 6) {
+                  if (introStep < 3) {
                     setIntroStep(introStep + 1);
                   } else {
                     localStorage.setItem("savewise_intro_seen", "true");
@@ -2031,88 +1715,112 @@ setSpentThisMonth(0);
                     setIntroStep(0);
                   }
                 }}
-                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black active:scale-[0.98] transition-all savewise-glow"
+                className="flex-1 bg-emerald-400 text-black rounded-2xl py-4 font-black"
               >
-                {introStep < 6 ? "Weiter" : "Loslegen"}
+                {introStep < 3 ? "Weiter" : "Loslegen"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-     {showSettings && (
-  <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-center justify-center p-6">
-    <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[34px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
-      <h2 className="text-4xl font-black text-black">
-        Einstellungen
-      </h2>
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 overflow-y-auto p-6 pt-10 pb-32 flex items-start justify-center">
+          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[28px] p-5 shadow-2xl my-6">
+            <h2 className="text-4xl font-black">Einstellungen</h2>
 
-      <p className="text-black mt-3">
-        Verwalte deine App-Daten und Optionen.
-      </p>
+            <p className="text-gray-400 mt-3">
+              Verwalte deine App-Daten und Optionen.
+            </p>
 
-      <div className="space-y-4 mt-8">
-        <button
-          type="button"
-          onClick={resetAllData}
-          className="w-full bg-red-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Alle App-Daten löschen
-        </button>
+            <div className="space-y-4 mt-8">
+              <button
+                type="button"
+                onClick={resetAllData}
+                className="w-full bg-red-400 text-black rounded-2xl p-4 font-black"
+              >
+                Alle App-Daten löschen
+              </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem("savewise_budget", "1200");
-            setMonthlyBudget(1200);
-            setBudgetInput("1200");
-            setShowSettings(false);
-          }}
-          className="w-full bg-yellow-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Nur Budget zurücksetzen
-        </button>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("savewise_budget", "1200");
+                  setMonthlyBudget(1200);
+                  setBudgetInput("1200");
+                  setShowSettings(false);
+                }}
+                className="w-full bg-yellow-400 text-black rounded-2xl p-4 font-black"
+              >
+               Nur Budget zurücksetzen
+              </button>
 
-        <button
-          type="button"
-          onClick={exportData}
-          className="w-full bg-cyan-400 text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Daten exportieren
-        </button>
+              <button
+                type="button"
+                onClick={exportData}
+                className="w-full bg-cyan-400 text-black rounded-2xl p-4 font-black"
+              >
+                Daten exportieren
+              </button>
 
-        <button
-          type="button"
-          onClick={() => setIsLightMode(!isLightMode)}
-          className="w-full bg-gray-200 text-black rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          {isLightMode ? "Dark Mode aktivieren" : "Light Mode aktivieren"}
-        </button>
+<button
+  type="button"
+  onClick={() => setIsLightMode(!isLightMode)}
+  className="w-full bg-gray-200 text-gray-900 rounded-2xl p-4 font-black"
+>
+  {isLightMode ? "Dark Mode aktivieren" : "Light Mode aktivieren"}
+</button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setIntroStep(0);
-            setShowIntro(true);
-          }}
-          className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Einführung erneut ansehen
-        </button>
+<div className="bg-gray-100 rounded-2xl p-5 text-gray-300">
+  SaveWise AI MVP · Lokale Demo-Version
+</div>
 
-        <button
-          type="button"
-          onClick={() => setShowSettings(false)}
-          className="w-full bg-black text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all duration-300"
-        >
-          Schließen
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              
+              <div className="bg-gray-100 rounded-3xl p-6 text-gray-800">
+                <h3 className="text-2xl font-black mb-3">
+                  Was kann SaveWise AI?
+                </h3>
 
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/85 border border-white/20 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl shadow-black/50 z-50">
+                <p className="text-gray-600 leading-relaxed">
+                  SaveWise AI hilft dir, deine Finanzen besser zu verstehen,
+                  Budgets zu kontrollieren, Sparziele zu verfolgen und deine
+                  Ausgaben mit KI-gestützten Empfehlungen zu optimieren.
+                </p>
+
+                <div className="grid gap-2 mt-5 text-sm font-bold text-gray-700">
+                  <p>✅ Monatsbudget & Ausgabenlimit</p>
+                  <p>✅ Sparziele mit Fortschritt</p>
+                  <p>✅ Finanztrend & Diagramme</p>
+                  <p>✅ KI-Finanzassistent</p>
+                  <p>✅ Backup Export</p>
+                  <p>✅ Premium Android-App Erlebnis</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIntroStep(0);
+                  setShowIntro(true);
+                }}
+                className="w-full bg-emerald-400 text-black rounded-3xl p-4 font-black"
+              >
+                Einführung erneut ansehen
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowSettings(false)}
+                className="w-full bg-white text-black rounded-2xl p-4 font-black"
+              >
+                Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/80 border border-gray-200 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl z-50">
         <NavButton active={activeTab === "home"} onClick={() => { setShowSettings(false); setActiveTab("home"); }}>
           <Home size={28} />
         </NavButton>
@@ -2128,7 +1836,7 @@ setSpentThisMonth(0);
         <button
           type="button"
           onClick={() => setShowSettings(true)}
-          className={showSettings ? "text-emerald-400" : "text-gray-300"}
+          className={showSettings ? "text-emerald-400" : "text-gray-500"}
         >
           <Settings size={28} />
         </button>
@@ -2138,116 +1846,25 @@ setSpentThisMonth(0);
   );
 }
 
-function Header(props: {
-  monthlySavings: number;
-  savingScore: number;
-  topCategory: string;
-}) {
+function Header() {
   return (
-    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[38px] p-10 shadow-2xl shadow-emerald-500/15">
-      <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
+    <div className="bg-white/5 border border-gray-200 rounded-[32px] p-8 backdrop-blur-2xl shadow-2xl shadow-emerald-500/10">
+      <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-cyan-400">
+        SaveWise AI
+      </h1>
 
-      <div className="relative flex flex-col items-center text-center">
-        <div className="relative mb-8">
-          <div className="absolute inset-0 rounded-[48px] bg-emerald-400/20 blur-2xl" />
-
-          <img
-            src="/savewise-icon.png"
-            alt="SaveWise Logo"
-            className="relative w-64 h-64 rounded-[46px] object-cover shadow-2xl shadow-emerald-400/30"
-          />
-        </div>
-
-        <div className="mt-6 w-full max-w-3xl rounded-[34px] bg-white/75 p-5 backdrop-blur-xl shadow-2xl shadow-emerald-400/10">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="min-h-[132px] rounded-[28px] border border-emerald-200 bg-emerald-100 px-2 py-4 flex flex-col items-center justify-center text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-400">
-                Sparen
-              </p>
-              <p className="mt-4 text-2xl font-black text-black leading-none">
-                {props.monthlySavings}€
-              </p>
-            </div>
-
-            <div className="min-h-[132px] rounded-[28px] border border-cyan-200 bg-cyan-100 px-2 py-4 flex flex-col items-center justify-center text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-400">
-                Score
-              </p>
-              <p className="mt-4 text-2xl font-black text-black leading-none">
-                {props.savingScore}/100
-              </p>
-            </div>
-
-            <div className="min-h-[132px] rounded-[28px] border border-fuchsia-200 bg-fuchsia-100 px-2 py-4 flex flex-col items-center justify-center text-center overflow-hidden">
-              <p className="text-[10px] font-black uppercase tracking-[0.04em] text-fuchsia-400">
-                Kategorie
-              </p>
-              <p className="mt-3 w-full text-center text-[13px] font-black text-black leading-tight whitespace-nowrap">
-                {props.topCategory}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <p className="text-gray-400 mt-4">
+        AI Finanzdashboard der nächsten Generation.
+      </p>
     </div>
   );
 }
 
-function Card(props: { title: string; value: string; color: string; note?: string; isLightMode?: boolean }) {
-  const isAI = props.title === "KI Insight";
-
+function Card(props: { title: string; value: string; color: string }) {
   return (
-    <div
-      className={
-        "relative overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
-        (isAI
-          ? props.isLightMode
-            ? "border-cyan-300 bg-cyan-100/80 shadow-cyan-200/40"
-            : "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
-          : props.isLightMode
-          ? "border-gray-200 bg-white/90 shadow-black/10"
-          : "border-white/10 bg-white/5 shadow-black/30")
-      }
-    >
-      {isAI && (
-        <>
-          <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-cyan-400/20 blur-3xl" />
-          <div className="absolute bottom-4 right-5 text-5xl opacity-10">✦</div>
-        </>
-      )}
-
-      <div className="relative">
-        <p
-          className={
-            isAI
-              ? props.isLightMode
-                ? "text-sm font-bold text-cyan-700"
-                : "text-sm font-bold text-cyan-300"
-              : props.isLightMode
-              ? "text-sm font-semibold text-black"
-              : "text-sm font-medium text-white"
-          }
-        >
-          {props.title}
-        </p>
-
-        <h2 className={`mt-4 text-xl font-black leading-tight ${props.color}`}>
-          {props.value}
-        </h2>
-
-        {isAI && (
-          <p
-            className={
-              props.isLightMode
-                ? "mt-3 text-xs leading-relaxed text-slate-800"
-                : "mt-3 text-xs leading-relaxed text-cyan-100/80"
-            }
-          >
-            {props.note || "Automatisch aus deinen aktuellen Finanzdaten erkannt."}
-          </p>
-        )}
-      </div>
+    <div className="bg-white/5 border border-gray-200 rounded-3xl p-8 backdrop-blur-2xl shadow-2xl shadow-black/30">
+      <p className="text-gray-400">{props.title}</p>
+      <h2 className={`text-2xl font-black mt-2 ${props.color}`}>{props.value}</h2>
     </div>
   );
 }
@@ -2258,10 +1875,12 @@ function Panel(props: {
   isLightMode?: boolean;
 }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-[34px] p-7 backdrop-blur-2xl shadow-2xl shadow-black/30">
+    <div className="bg-white/5 border border-gray-200 rounded-3xl p-8 backdrop-blur-2xl shadow-2xl shadow-black/30">
       <h2
         className={
-          props.isLightMode ? "text-4xl font-black text-white" : "text-4xl font-black text-white"
+          props.isLightMode
+            ? "text-4xl font-black text-gray-900"
+            : "text-4xl font-black text-white"
         }
       >
         {props.title}
@@ -2274,16 +1893,16 @@ function Panel(props: {
 function Mini(props: { title: string; value: string; color: string }) {
   return (
     <div className="bg-gray-100 rounded-2xl p-5">
-      <p className="text-gray-300">{props.title}</p>
-      <p className={`text-xl font-black mt-2 ${props.color}`}>{props.value}</p>
+      <p className="text-gray-400">{props.title}</p>
+      <p className={`text-2xl font-black mt-2 ${props.color}`}>{props.value}</p>
     </div>
   );
 }
 
 function Info(props: { color: string; title: string; text: string }) {
   const colorMap: Record<string, string> = {
-    emerald: "bg-emerald-400/25 border-emerald-400/30 text-emerald-400",
-    cyan: "bg-cyan-400/25 border-cyan-400/30 text-cyan-400",
+    emerald: "bg-emerald-400/10 border-emerald-400/30 text-emerald-400",
+    cyan: "bg-cyan-400/10 border-cyan-400/30 text-cyan-400",
     yellow: "bg-yellow-400/10 border-yellow-400/30 text-yellow-400"
   };
 
@@ -2299,7 +1918,7 @@ function BudgetNote(props: { color: "red" | "yellow" | "emerald"; title: string;
   const styles = {
     red: "bg-red-400/10 border-red-400/30 text-red-400",
     yellow: "bg-yellow-400/10 border-yellow-400/30 text-yellow-400",
-    emerald: "bg-emerald-400/25 border-emerald-400/30 text-emerald-400"
+    emerald: "bg-emerald-400/10 border-emerald-400/30 text-emerald-400"
   };
 
   return (
@@ -2315,7 +1934,7 @@ function NavButton(props: { active: boolean; onClick: () => void; children: Reac
     <button
       type="button"
       onClick={props.onClick}
-      className={props.active ? "text-emerald-400" : "text-gray-300"}
+      className={props.active ? "text-emerald-400" : "text-gray-500"}
     >
       {props.children}
     </button>
