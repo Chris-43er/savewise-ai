@@ -50,8 +50,13 @@ jobs:
           npx next build
           npx next export || true
 
-      - name: Add Android
-        run: npx cap add android
+      - name: Add Android if missing
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            echo "Android platform already exists, skipping cap add."
+          fi
 
       - name: Sync Android
         run: npx cap sync android
