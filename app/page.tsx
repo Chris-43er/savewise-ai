@@ -18,11 +18,15 @@ type Transaction = {
 const defaultTransactions: Transaction[] = [];
 
 export default function Page() {
+
+
+
   const [activeTab, setActiveTab] = useState("home");
   const [homeSection, setHomeSection] = useState("overview");
   const [analyseSection, setAnalyseSection] = useState("menu");
-  const [reportSection, setReportSection] = useState("menu");
+  const [financeSection, setFinanceSection] = useState("menu");
   const [showSettings, setShowSettings] = useState(false);
+  const [isAiHubOpen, setIsAiHubOpen] = useState(false);
   const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
@@ -52,21 +56,78 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [manualExpenseAmount, setManualExpenseAmount] = useState("");
   const [manualExpenseRecurring, setManualExpenseRecurring] = useState(true);
   const [manualExpenseInterval, setManualExpenseInterval] = useState("monatlich");
+
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
+
+
   const [manualExpenses, setManualExpenses] = useState<
-    { id: number; name: string; category: string; amount: number; recurring: boolean; interval?: string; createdAt: string }[]
+    {
+    id: number;
+    name: string;
+    category: string;
+    amount: number;
+    recurring: boolean;
+    interval?: string;
+    aiDetected?: boolean;
+    aiHint?: string;
+    confirmed?: boolean;
+    createdAt: string;
+  }[]
   >([]);
 
   const [chatMessage, setChatMessage] = useState("");
   const [chatReply, setChatReply] = useState("Hallo 👋 Ich bin dein AI Finanzassistent.");
+const [aiApiKey, setAiApiKey] = useState("");
 const [savingGoal, setSavingGoal] = useState("");
 const [goalAmount, setGoalAmount] = useState(0);
 const [savedAmount, setSavedAmount] = useState(0);
 
+/* =========================================================
+   SAVEWISE FOUNDATION V1
+========================================================= */
+
+type AIInsight = {
+  id: string;
+  type: "warning" | "opportunity" | "info";
+  title: string;
+  description: string;
+  priority: number;
+};
+
+type BudgetGoal = {
+  id: string;
+  title: string;
+  target: number;
+  current: number;
+};
+
+type SmartContract = {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+  recurring: boolean;
+};
+
+const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
+const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
+const [smartContracts, setSmartContracts] = useState<SmartContract[]>([]);
+
+const [dynamicPriority, setDynamicPriority] = useState("overview");
+const [smartNotifications, setSmartNotifications] = useState<string[]>([]);
+
+
+
+
   useEffect(() => {
+    const savedAiKey = localStorage.getItem("savewise_ai_api_key");
+    if (savedAiKey) setAiApiKey(savedAiKey);
+
     const cleaned = localStorage.getItem("savewise_force_clean");
 
     if (!cleaned) {
       localStorage.removeItem("savewise_data");
+    localStorage.removeItem("savewise_budget");
       localStorage.removeItem("savewise_transactions");
     localStorage.removeItem("savewise_manual_expenses");
       localStorage.setItem("savewise_force_clean", "true");
@@ -84,7 +145,14 @@ const [savedAmount, setSavedAmount] = useState(0);
       });
     }, 15);
 
-    return () => clearInterval(splashTimer);
+    const smartNotifications =
+    aiWarnings.length > 0
+      ? [aiWarnings[0]]
+      : savingScore >= 80
+      ? ["Sehr gute Finanzstruktur"]
+      : [];
+
+  return () => clearInterval(splashTimer);
   }, []);
 
   useEffect(() => {
@@ -156,43 +224,124 @@ const [savedAmount, setSavedAmount] = useState(0);
     localStorage.setItem("savewise_manual_expenses", JSON.stringify(manualExpenses));
   }, [manualExpenses]);
 
-  function askAI() {
-  if (!chatMessage.trim()) return;
-
-  setChatReply("AI analysiert dein Dashboard...");
-
-const text = chatMessage.toLowerCase();
-
-setTimeout(() => {
-  if (text.includes("sparscore") || text.includes("gesunken")) {
-    setChatReply(
-      `Dein aktueller Sparscore liegt bei ${savingScore}/100. Wahrscheinlich beeinflussen vor allem Ausgaben in der Kategorie "${topCategory}" und dein aktuelles Budget-Verhältnis den Score.`
-    );
-
-  } else if (text.includes("budget")) {
-    setChatReply(
-      `Dein Monatsbudget liegt bei ${monthlyBudget.toFixed(2).replace(".", ",")}€. Davon hast du bereits ${totalMonthlyExpenses.toFixed(2).replace(".", ",")}€ genutzt. Übrig vom Ausgabenlimit sind ${(monthlyBudget - totalMonthlyExpenses).toFixed(2).replace(".", ",")}€.`
-    );
-
-  } else if (text.includes("sparen") || text.includes("300")) {
-    setChatReply(
-      `Aktuell liegt dein Sparen bei ca. ${monthlySavings}€. Um mehr zu sparen, prüfe zuerst ${topCategory}, Abos und spontane Ausgaben.`
-    );
-
-  } else if (text.includes("abo") || text.includes("streaming")) {
-    setChatReply(
-      `Bei Streaming und Abos solltest du prüfen, welche Dienste du wirklich nutzt. Kleine monatliche Beträge senken oft unbemerkt deinen Sparscore.`
-    );
-
-  } else {
-    setChatReply(
-      `Ich sehe aktuell einen Sparscore von ${savingScore}/100 und analysiere deine Budget- und Ausgabedaten.`
-    );
+  function buildFinanceContext() {
+    return {
+      einkommen: monthlyIncome,
+      ausgaben: totalMonthlyExpenses,
+      uebrig: monthlyIncome > 0 ? monthlyIncome - totalMonthlyExpenses : 0,
+      sparquote: savingsRate,
+      score: savingScore,
+      topKategorie: topCategory || "Keine Kategorie erkannt",
+      budget: monthlyBudget,
+      budgetStatus: totalMonthlyExpenses > monthlyBudget ? "über Budget" : "im Budget",
+      fixkostenMonatlich: contractMonthlyTotal,
+      fixkostenQuote: contractRatio,
+      vertraege: contractExpenses.map((item) => ({
+        name: item.name,
+        kategorie: item.category,
+        betrag: item.amount,
+        intervall: item.interval || "monatlich"
+      })),
+      ausgabenListe: allExpenseItems.map((item) => ({
+        name: item.name,
+        kategorie: item.category,
+        betrag: Math.abs(item.amount)
+      }))
+    };
   }
 
-  setChatMessage("");
-}, 900);
-}
+  function localFinanceAnswer(question: string) {
+    const q = question.toLowerCase();
+    const context = buildFinanceContext();
+
+    if (context.einkommen <= 0 && context.ausgaben <= 0) {
+      return "Mir fehlen noch Finanzdaten. Trage zuerst Einkommen, Ausgaben oder Verträge ein, damit ich deine Situation sinnvoll analysieren kann.";
+    }
+
+    if (q.includes("sparen") || q.includes("sparpotenzial") || q.includes("geld sparen")) {
+      if (context.sparquote >= 25) {
+        return `Deine Sparquote liegt bei ${context.sparquote}%. Das ist stark. Weiteres Sparpotenzial findest du vor allem bei variablen Ausgaben und wiederkehrenden Kosten. Deine monatlichen Fixkosten liegen bei ${context.fixkostenMonatlich.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€.`;
+      }
+
+      return `Deine Sparquote liegt aktuell bei ${context.sparquote}%. Ich würde zuerst wiederkehrende Kosten, Abos und flexible Ausgaben prüfen. Ziel sollte mindestens 20% Nettoüberschuss sein.`;
+    }
+
+    if (q.includes("fixkosten") || q.includes("vertrag") || q.includes("abo")) {
+      return `Deine monatlichen Fixkosten liegen bei ${context.fixkostenMonatlich.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€. Das entspricht ca. ${context.fixkostenQuote}% deines Einkommens. ${context.fixkostenQuote > 50 ? "Das ist recht hoch und sollte geprüft werden." : "Das wirkt aktuell noch kontrollierbar."}`;
+    }
+
+    if (q.includes("score") || q.includes("finanzscore")) {
+      return `Dein Finanzscore liegt bei ${context.score}/100. Er wird durch Einkommen, Ausgaben, Sparquote, Budgetstatus und Fixkosten beeinflusst. Aktuell ist deine Sparquote ${context.sparquote}% und dein Budgetstatus ist: ${context.budgetStatus}.`;
+    }
+
+    if (q.includes("budget")) {
+      return `Dein Monatsbudget liegt bei ${context.budget.toLocaleString("de-DE")}€. Deine aktuellen Ausgaben liegen bei ${context.ausgaben.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€. Du bist damit ${context.budgetStatus}.`;
+    }
+
+    if (q.includes("urlaub") || q.includes("leisten") || q.includes("kaufen")) {
+      return `Aktuell bleiben dir rechnerisch ${context.uebrig.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ übrig. Für größere Ausgaben solltest du zuerst prüfen, ob Fixkosten, Rücklagen und Sparziel abgesichert sind.`;
+    }
+
+    if (q.includes("ausgaben") || q.includes("wofür") || q.includes("kategorie")) {
+      return `Deine Ausgaben liegen aktuell bei ${context.ausgaben.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€. Die auffälligste Kategorie ist: ${context.topKategorie}. Öffne "Alle Ausgaben", um einzelne Positionen zu prüfen.`;
+    }
+
+    return `Ich sehe aktuell ${context.einkommen.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ Einkommen, ${context.ausgaben.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ Ausgaben, ${context.sparquote}% Sparquote und einen Score von ${context.score}/100. Frage mich z.B. "Wo kann ich sparen?", "Wie hoch sind meine Fixkosten?" oder "Warum ist mein Score so?".`;
+  }
+
+  function askQuickAI(question: string) {
+    setChatMessage(question);
+    setChatReply(localFinanceAnswer(question));
+  }
+
+  async function askAI() {
+    if (!chatMessage.trim()) return;
+
+    const question = chatMessage.trim();
+    const context = buildFinanceContext();
+
+    setChatReply("SaveWise AI analysiert deine echten App-Daten...");
+
+    try {
+      const key = aiApiKey || localStorage.getItem("savewise_ai_api_key") || "";
+
+      if (key) {
+        const prompt = `Du bist SaveWise AI, ein verständlicher Finanzcoach. Antworte kurz, konkret und auf Deutsch. Nutze diese echten App-Daten: ${JSON.stringify(context)}. Frage des Nutzers: ${question}`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${key}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "google/gemma-3-4b-it:free",
+            messages: [
+              {
+                role: "user",
+                content: prompt
+              }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        const answer = data?.choices?.[0]?.message?.content;
+
+        if (answer) {
+          setChatReply(answer);
+          setChatMessage("");
+          return;
+        }
+      }
+
+      setChatReply(localFinanceAnswer(question));
+      setChatMessage("");
+    } catch (error) {
+      setChatReply(localFinanceAnswer(question));
+      setChatMessage("");
+    }
+  }
 
   function detectCategory(text: string) {
     const value = text.toLowerCase();
@@ -486,7 +635,7 @@ ${smartTip}`;
     setMonthlySavings((old) => (old >= 250 ? 80 : old + 35));
 
     setHistory((old) => [
-      "Automatische AI Finanzanalyse durchgeführt",
+      "Automatische AI Insights durchgeführt",
       ...old.slice(0, 4)
     ]);
   }, 1500);
@@ -573,28 +722,53 @@ ${smartTip}`;
   }
 
   function resetAllData() {
-  localStorage.removeItem("savewise_data");
-  localStorage.setItem("savewise_budget", "1200");
+    Object.keys(localStorage).forEach((key) => {
+      const keepKeys = ["savewise_intro_seen", "savewise_onboarding_done", "savewise_ai_api_key"];
 
-  setSavingScore(0);
-  setMonthlySavings(0);
-  setMonthlyBudget(1200);
-  setBudgetInput("1200");
+      if (key.startsWith("savewise_") && !keepKeys.includes(key)) {
+        localStorage.removeItem(key);
+      }
+    });
 
-  setMonthlyIncome(0);
-setIncomeInput("");
+    setSavingScore(0);
+    setMonthlySavings(0);
+    setMonthlyBudget(1200);
+    setBudgetInput("1200");
 
-setSpentThisMonth(0);
+    setMonthlyIncome(0);
+    setIncomeInput("");
+    setExpenseInput("");
+    setSpentThisMonth(0);
 
-  setSpentThisMonth(0);
-  setTopCategory("");
-  setHistory([]);
-  setTransactions([]);
-  setUploadedFile("");
-  setUploadStatus("");
-  setAnalysisResult("");
-  setShowSettings(false);
-}
+    setTopCategory("");
+    setHistory([]);
+    setTransactions([]);
+    setManualExpenses([]);
+
+    setManualExpenseName("");
+    setManualExpenseCategory("Handy");
+    setManualExpenseAmount("");
+    setManualExpenseRecurring(true);
+    setManualExpenseInterval("monatlich");
+
+    setUploadedFile("");
+    setUploadStatus("");
+    setAnalysisResult("");
+
+    setSavingGoal("");
+    setGoalAmount(0);
+    setSavedAmount(0);
+
+    setHomeSection("overview");
+    setFinanceSection("menu");
+    setShowSettings(false);
+
+    localStorage.setItem("savewise_intro_seen", "true");
+    localStorage.setItem("savewise_onboarding_done", "true");
+
+    setShowIntro(false);
+    setShowOnboarding(false);
+  }
 
 
   useEffect(() => {
@@ -968,6 +1142,9 @@ setSpentThisMonth(0);
         amount,
         recurring: finalRecurring,
         interval: finalInterval,
+        aiDetected: !!detected,
+        aiHint: detected?.hint || "",
+        confirmed: false,
         createdAt: new Date().toISOString()
       },
       ...manualExpenses
@@ -985,6 +1162,14 @@ setSpentThisMonth(0);
 
   function deleteManualExpense(id: number) {
     setManualExpenses(manualExpenses.filter((item) => item.id !== id));
+  }
+
+  function confirmExpense(id: number) {
+    setManualExpenses(
+      manualExpenses.map((item) =>
+        item.id === id ? { ...item, confirmed: true } : item
+      )
+    );
   }
 
   return (
@@ -1155,51 +1340,350 @@ setSpentThisMonth(0);
 
         {activeTab === "home" && (
           <div className="space-y-6 mt-6">
-            {homeSection === "overview" && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card isLightMode={isLightMode} title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card
-                isLightMode={isLightMode}
-                title="Ausgaben"
-                value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
-                color="text-red-400"
-                onClick={() => {
-                  setActiveTab("analyse");
-                  setAnalyseSection("transactions");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
-              <Card isLightMode={isLightMode}
-                title="Übrig"
-                value={
-                  Number.isFinite(monthlyIncome) && Number.isFinite(totalMonthlyExpenses) && monthlyIncome > 0
-                    ? remainingAfterManual.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
-                    : "—"
-                }
-                color="text-yellow-400"
-              />
-              <Card isLightMode={isLightMode}
-                title="KI Insight"
-                value={aiInsight}
-                color="text-cyan-400"
-                note={aiRecommendation}
-              />
-              <Card
-                isLightMode={isLightMode}
-                title="Finanzscore"
-                value={`${savingScore}/100 · ${savingsRate}%`}
-                color="text-purple-400"
-                note="Score und Sparquote kombiniert."
-                onClick={() => setShowScoreInfo(true)}
-              />
-            </div>
+            {homeSection === "aihub" && (
+              <div className="space-y-6 pt-4">
+
+                <Panel isLightMode={isLightMode} title="Analyse & AI">
+
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+
+                    <div className="rounded-3xl bg-cyan-400/10 border border-cyan-400/20 p-5">
+                      <p className="text-cyan-300 text-sm font-black uppercase tracking-wider">
+                        Sparquote
+                      </p>
+
+                      <h2 className="text-4xl font-black text-white mt-3">
+                        {savingsRate}%
+                      </h2>
+                    </div>
+
+                    <div className="rounded-3xl bg-emerald-400/10 border border-emerald-400/20 p-5">
+                      <p className="text-emerald-300 text-sm font-black uppercase tracking-wider">
+                        Finanzscore
+                      </p>
+
+                      <h2 className="text-4xl font-black text-white mt-3">
+                        {savingScore}/100
+                      </h2>
+                    </div>
+
+                  </div>
+
+                  <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-6">
+
+                    <p className="text-white text-xl font-black">
+                      AI Einschätzung
+                    </p>
+
+                    <p className="text-white/80 mt-4 leading-relaxed">
+                      {aiRecommendations?.[0] || aiInsight}
+                    </p>
+
+                  </div>
+
+                  {aiWarnings.length > 0 && (
+                    <div className="mt-5 rounded-3xl bg-red-400/10 border border-red-400/20 p-6">
+
+                      <p className="text-red-300 font-black">
+                        Wichtigster Hinweis
+                      </p>
+
+                      <p className="text-white/80 mt-3">
+                        ⚠ {aiWarnings[0]}
+                      </p>
+
+                    </div>
+                  )}
+
+                </Panel>
+
+              </div>
             )}
 
 
+            {homeSection === "contracts" && (
+              <div className="space-y-6 pt-4">
+
+                <Panel isLightMode={isLightMode} title="Verträge & Budget">
+
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+
+                    <div className="rounded-3xl bg-fuchsia-400/10 border border-fuchsia-400/20 p-5">
+                      <p className="text-fuchsia-300 text-sm font-black uppercase tracking-wider">
+                        Fixkosten
+                      </p>
+
+                      <h2 className="text-3xl font-black text-white mt-3">
+                        {contractMonthlyTotal.toLocaleString("de-DE", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}€
+                      </h2>
+                    </div>
+
+                    <div className="rounded-3xl bg-yellow-400/10 border border-yellow-400/20 p-5">
+                      <p className="text-yellow-300 text-sm font-black uppercase tracking-wider">
+                        Budget
+                      </p>
+
+                      <h2 className="text-3xl font-black text-white mt-3">
+                        {monthlyBudget.toLocaleString("de-DE", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        })}€
+                      </h2>
+                    </div>
+
+                  </div>
+
+                  <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-6">
+
+                    <p className="text-white text-xl font-black">
+                      Verträge & Abos
+                    </p>
+
+                    <p className="text-white/70 mt-4 leading-relaxed">
+                      SaveWise erkennt automatisch wiederkehrende Kosten,
+                      Abos und Verträge aus deinen Finanzdaten.
+                    </p>
+
+                  </div>
+
+                </Panel>
+
+              </div>
+            )}
 
 
-            {homeSection === "ai" && (
-              <div className="space-y-6">
+            {homeSection === "overview" && (
+              <div className="space-y-4 mb-6">
+
+                <div className="rounded-[34px] bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 border border-white/10 p-6 backdrop-blur-xl shadow-2xl">
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-black tracking-[0.18em] text-emerald-300 uppercase">
+                        AI Finanzstatus
+                      </p>
+
+                      <h2 className="text-3xl font-black text-white mt-2">
+                        {aiFinanceStatus}
+                      </h2>
+                    </div>
+
+                    <div className="w-16 h-16 rounded-3xl bg-emerald-400/20 flex items-center justify-center text-3xl">
+                      🤖
+                    </div>
+                  </div>
+
+                  <p className="text-white/80 mt-5 leading-relaxed">
+                    {aiRecommendations?.[0] || "Deine Finanzstruktur wirkt aktuell stabil."}
+                  </p>
+
+                </div>
+
+                {aiWarnings.length > 0 && (
+                  <div className="rounded-[30px] bg-red-400/10 border border-red-400/20 p-5">
+
+                    <p className="text-red-400 font-black">
+                      Wichtigster Hinweis
+                    </p>
+
+                    <p className="text-white mt-2 leading-relaxed">
+                      ⚠ {aiWarnings[0]}
+                    </p>
+
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            <div className="hidden">
+              <p className="text-white text-xl font-black">
+                Frage SaveWise AI
+              </p>
+
+              <p className="text-white/50 mt-1 text-sm">
+                Stelle Fragen zu deinen echten Finanzdaten.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mt-5">
+                <button
+                  type="button"
+                  onClick={() => askQuickAI("Wo kann ich sparen?")}
+                  className="bg-white/10 border border-white/10 rounded-2xl p-3 text-white font-bold text-sm"
+                >
+                  Sparpotenzial
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => askQuickAI("Wie hoch sind meine Fixkosten?")}
+                  className="bg-white/10 border border-white/10 rounded-2xl p-3 text-white font-bold text-sm"
+                >
+                  Fixkosten
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => askQuickAI("Warum ist mein Score so?")}
+                  className="bg-white/10 border border-white/10 rounded-2xl p-3 text-white font-bold text-sm"
+                >
+                  Score
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => askQuickAI("Kann ich mir Urlaub leisten?")}
+                  className="bg-white/10 border border-white/10 rounded-2xl p-3 text-white font-bold text-sm"
+                >
+                  Urlaub
+                </button>
+              </div>
+
+              <div className="flex gap-3 mt-4">
+                <input
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="z.B. Wo kann ich sparen?"
+                  className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-4 text-white placeholder:text-white/40 outline-none"
+                />
+
+                <button
+                  type="button"
+                  onClick={askAI}
+                  className="bg-emerald-400 text-black rounded-2xl px-5 font-black"
+                >
+                  Fragen
+                </button>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-black/20 border border-white/10 p-4">
+                <p className="text-emerald-300 text-xs font-black uppercase tracking-[0.18em]">
+                  Antwort
+                </p>
+
+                <p className="text-white/80 mt-3 leading-relaxed">
+                  {chatReply}
+                </p>
+              </div>
+            </div>
+
+            <div className="relative rounded-[42px] border border-emerald-400/20 bg-gradient-to-br from-emerald-400/10 via-cyan-400/5 to-transparent p-4 shadow-[0_0_55px_rgba(16,185,129,0.16)]">
+              <div className="absolute -inset-1 rounded-[46px] bg-emerald-400/10 blur-2xl pointer-events-none" />
+              <div className="rounded-[46px] border border-emerald-400/20 bg-white/[0.03] p-6 shadow-[0_0_55px_rgba(16,185,129,0.18)] backdrop-blur-xl">
+
+              <div className="flex items-center justify-between gap-6">
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHomeSection("monthly");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="relative w-44 h-44 shrink-0 rounded-full border-[14px] border-emerald-400/35 shadow-[0_0_55px_rgba(16,185,129,0.42)] flex items-center justify-center active:scale-95 transition-all"
+                  aria-label="Monatsvergleich öffnen"
+                >
+
+                  <div className="absolute inset-2 rounded-full border-[10px] border-cyan-400/20" />
+                  <div className="absolute inset-8 rounded-full bg-[#050816] border border-white/10 shadow-inner" />
+
+                  <div className="relative text-center">
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-emerald-300 font-black">
+                      Übrig
+                    </p>
+
+                    <p className="text-2xl font-black text-yellow-400 mt-2">
+                      {monthlyIncome > 0
+                        ? remainingAfterManual.toLocaleString("de-DE", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }) + "€"
+                        : "—"}
+                    </p>
+                  </div>
+                </button>
+
+                <div className="flex-1 space-y-4">
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("finance");
+                      setFinanceSection("manual");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full text-left rounded-3xl border border-emerald-400/10 bg-emerald-400/5 p-4 active:scale-[0.98] transition-all"
+                  >
+                    <p className="text-white/50 text-sm font-bold">
+                      Einkommen
+                    </p>
+
+                    <p className="text-3xl font-black text-emerald-400 mt-1">
+                      {monthlyIncome > 0
+                        ? monthlyIncome.toLocaleString("de-DE", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          }) + "€"
+                        : "—"}
+                    </p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("finance");
+                      setFinanceSection("transactions");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="w-full text-left rounded-3xl border border-red-400/10 bg-red-400/5 p-4 active:scale-[0.98] transition-all"
+                  >
+                    <p className="text-white/50 text-sm font-bold">
+                      Ausgaben
+                    </p>
+
+                    <p className="text-3xl font-black text-red-400 mt-1">
+                      {totalMonthlyExpenses > 0
+                        ? totalMonthlyExpenses.toLocaleString("de-DE", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          }) + "€"
+                        : "—"}
+                    </p>
+                  </button>
+
+                </div>
+
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-6">
+
+                <Card
+                  isLightMode={isLightMode}
+                  title="AI Status"
+                  value={aiFinanceStatus || aiInsight}
+                  color="text-cyan-400"
+                />
+
+                <Card
+                  isLightMode={isLightMode}
+                  title="Finanzscore"
+                  value={`${savingScore}/100 · ${savingsRate}%`}
+                  color="text-purple-400"
+                  onClick={() => setShowScoreInfo(true)}
+                />
+
+              </div>
+
+            </div>
+            </div>
+
+
+
+
+            {false && (
+              <div className="space-y-5">
 
                 <button
                   type="button"
@@ -1209,7 +1693,7 @@ setSpentThisMonth(0);
                   ← Zurück zur Übersicht
                 </button>
 
-                <Panel isLightMode={isLightMode} title="AI Finanzanalyse">
+                <Panel isLightMode={isLightMode} title="AI Insights">
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 
@@ -1309,7 +1793,7 @@ setSpentThisMonth(0);
 
 
             {homeSection === "contracts" && (
-              <div className="space-y-6">
+              <div className="space-y-5">
                 <button
                   type="button"
                   onClick={() => setHomeSection("overview")}
@@ -1356,31 +1840,58 @@ setSpentThisMonth(0);
                   <div className="space-y-3 mt-6">
                     {contractExpenses.length === 0 && (
                       <p className="text-white">
-                        Noch keine Fixkosten oder Verträge vorhanden. Füge sie unter Report → Manuelle Eingabe hinzu.
+                        Noch keine Fixkosten oder Verträge vorhanden. Füge sie unter Report → Ausgaben & Verträge hinzu.
                       </p>
                     )}
 
                     {contractExpenses.map((item) => (
-                      <div key={item.id} className="rounded-3xl bg-gray-100 border border-gray-200 p-5 flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-black text-black">{item.name}</p>
-                          <p className="text-sm text-black mt-1">
-                            {item.category} · {item.interval || "monatlich"}
-                          </p>
+                      <div key={item.id} className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-black text-black">{item.name}</p>
+                            <p className="text-sm text-black mt-1">
+                              {item.category} · {item.interval || "monatlich"}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="font-black text-red-400">
+                              {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                            </p>
+                            <p className="text-xs text-black mt-1">
+                              {item.interval === "jährlich"
+                                ? "≈ " + (item.amount / 12).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
+                                : item.interval === "vierteljährlich"
+                                ? "≈ " + (item.amount / 3).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
+                                : "monatlich"}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="text-right">
-                          <p className="font-black text-red-400">
-                            {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-                          <p className="text-xs text-black mt-1">
-                            {item.interval === "jährlich"
-                              ? "≈ " + (item.amount / 12).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
-                              : item.interval === "vierteljährlich"
-                              ? "≈ " + (item.amount / 3).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
-                              : "monatlich"}
-                          </p>
-                        </div>
+                        {item.aiDetected && !item.confirmed && (
+                          <div className="mt-4 rounded-2xl bg-yellow-400/15 border border-yellow-400/30 p-4">
+                            <p className="font-black text-black">AI Erkennung</p>
+                            <p className="text-black mt-1">
+                              {item.aiHint || "AI hat diesen Vertrag automatisch erkannt."}
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() => confirmExpense(item.id)}
+                              className="mt-4 bg-emerald-400 text-black px-5 py-3 rounded-2xl font-black"
+                            >
+                              AI-Erkennung bestätigen
+                            </button>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => deleteManualExpense(item.id)}
+                          className="w-full mt-4 bg-red-400 text-white rounded-2xl py-3 font-black"
+                        >
+                          Löschen
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1392,11 +1903,6 @@ setSpentThisMonth(0);
 <div id="home-menu" className="grid gap-4">
   {[
     {
-      key: "overview",
-      label: "Übersicht",
-      text: "Alle wichtigen Finanzdaten auf einen Blick"
-    },
-    {
       key: "compare",
       label: "Monatsvergleich",
       text: "Vergleiche Einnahmen, Ausgaben und Sparquote"
@@ -1405,16 +1911,6 @@ setSpentThisMonth(0);
       key: "goal",
       label: "Sparziel",
       text: "Verfolge dein aktuelles Sparziel"
-    },
-    {
-      key: "budget",
-      label: "Monatsbudget",
-      text: "Kontrolliere dein monatliches Ausgabenlimit"
-    },
-    {
-      key: "ai",
-      label: "AI Finanzanalyse",
-      text: "Erkenne Risiken, Spartipps und Finanzprognosen"
     },
 
     {
@@ -1581,7 +2077,7 @@ setSpentThisMonth(0);
   </div>
 </Panel>
 </div>
-              <div className={homeSection === "budget" ? "block" : "hidden"}>
+              <div className={false ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsbudget">
                 <div className="flex gap-3 mt-6">
                   <input
@@ -1674,504 +2170,85 @@ setSpentThisMonth(0);
           </div>
         )}
 
-        {activeTab === "analyse" && (
-          <>
-            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+        {activeTab === "finance" && (
           <div className="space-y-6 mt-6">
 
-            {analyseSection === "menu" && (
-              <div className="grid gap-4">
-                {[
-                  { key: "assistant", label: "AI Finanzassistent", text: "Stelle Fragen zu deinen Finanzen" },
-                  { key: "smart", label: "Smart Insights", text: "Empfehlungen, Sparen, Fixkosten und Trends" },
-                  { key: "transactions", label: "Transaktionen", text: "Aktuelle Buchungen prüfen" }
-                ].map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setAnalyseSection(item.key)}
-                    className={
-                      "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                      (isLightMode
-                        ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                        : "bg-white/5 text-white border-white/10")
-                    }
-                  >
-                    <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                    <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {analyseSection !== "menu" && (
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAnalyseSection("menu");
-                    window.scrollTo({ top: 0, behavior: "auto" });
-                  }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
-                >
-                  <span className="text-white"><span className="text-white">← Zurück zur Analyse</span></span>
-                </button>
-              </div>
-            )}
-
-            <div className={analyseSection === "assistant" ? "block pt-28" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="AI Finanzassistent">
-              <div className="bg-gray-100 border border-gray-200 rounded-2xl p-5 mt-6">
-                <p className="text-white whitespace-pre-line">{chatReply}</p>
-              </div>
-
-              <div className="flex flex-col md:flex-row gap-4 mt-6">
-                <input
-                  value={chatMessage}
-                  onChange={(e) => setChatMessage(e.target.value)}
-                  placeholder="z.B. Wie spare ich mehr Geld?"
-                  className="flex-1 bg-gray-100 border border-gray-200 rounded-2xl p-4 outline-none text-black placeholder:text-gray-500 focus:border-emerald-400 transition-all"
-                />
-
-                <button
-                  onClick={askAI}
-                  className="bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black"
-                >
-                  Fragen
-                </button>
-              </div>
-            </Panel>
-            </div>
-
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="AI Empfehlungen">
-              <div className="space-y-4 mt-6">
-                {monthlyIncome <= 0 && spentThisMonth <= 0 && (
-                  <Info
-                    color="cyan"
-                    title="Noch keine Finanzdaten"
-                    text="Trage Einkommen und Ausgaben manuell ein oder lade einen Report hoch, damit SaveWise AI persönliche Empfehlungen erstellen kann."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome > 0.8 && (
-                  <Info
-                    color="red"
-                    title="Hohe Ausgaben erkannt"
-                    text="Deine Ausgaben liegen über 80% deines Einkommens. Prüfe variable Kosten und setze ein Wochenlimit."
-                  />
-                )}
-
-                {monthlyIncome > 0 && spentThisMonth > 0 && spentThisMonth / monthlyIncome <= 0.8 && (
-                  <Info
-                    color="emerald"
-                    title="Solide Finanzlage"
-                    text="Deine Ausgaben liegen im kontrollierten Bereich. Du kannst den Überschuss gezielt für Sparziele nutzen."
-                  />
-                )}
-
-                {monthlyBudget > 0 && totalMonthlyExpenses > monthlyBudget * 0.9 && (
-                  <Info
-                    color="yellow"
-                    title="Budget fast erreicht"
-                    text="Du hast bereits mehr als 90% deines Monatsbudgets verbraucht. Reduziere spontane Ausgaben bis Monatsende."
-                  />
-                )}
-
-                {transactions.length > 0 && (
-                  <Info
-                    color="cyan"
-                    title="Transaktionen erkannt"
-                    text="SaveWise AI analysiert deine Buchungen automatisch für Kategorien, Budget und Sparene."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Lebensmittel") && (
-                  <Info
-                    color="emerald"
-                    title="Lebensmittel-Ausgaben erkannt"
-                    text="Prüfe wöchentliche Supermarkt-Ausgaben und vergleiche Preise, um zusätzliches Sparen zu nutzen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Shopping") && (
-                  <Info
-                    color="yellow"
-                    title="Shopping-Ausgaben erkannt"
-                    text="Shopping-Ausgaben wurden erkannt. Ein festes Monatslimit kann helfen, spontane Käufe zu reduzieren."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Streaming & Medien") && (
-                  <Info
-                    color="cyan"
-                    title="Streaming-Abos erkannt"
-                    text="Überprüfe aktive Streaming- und Medien-Abos auf ungenutzte Dienste oder doppelte Kosten."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Mobilität") && (
-                  <Info
-                    color="yellow"
-                    title="Mobilitätskosten erkannt"
-                    text="Transport- und Mobilitätskosten wurden erkannt. Monatstickets oder Fahrgemeinschaften könnten Kosten senken."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Kredite & Finanzierung") && (
-                  <Info
-                    color="red"
-                    title="Finanzierungs-Kosten erkannt"
-                    text="Kredit- oder Finanzierungszahlungen wurden erkannt. Prüfe Zinssätze und mögliche Umschuldungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Versicherungen") && (
-                  <Info
-                    color="cyan"
-                    title="Versicherungen erkannt"
-                    text="Vergleiche regelmäßig Versicherungsbeiträge und prüfe mögliche Einsparungen."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "PayPal / Online") && (
-                  <Info
-                    color="yellow"
-                    title="Onlinezahlungen erkannt"
-                    text="Viele kleine Onlinezahlungen können sich summieren. Kontrolliere regelmäßige Abbuchungen besonders aufmerksam."
-                  />
-                )}
-
-                {transactions.some((t) => t.category === "Wohnen & Fixkosten") && (
-                  <Info
-                    color="emerald"
-                    title="Fixkosten erkannt"
-                    text="Fixkosten wurden erkannt. Bereits kleine Einsparungen bei Strom, Gas oder Verträgen können langfristig helfen."
-                  />
-                )}
-
-                {transactions.filter((t) =>
-                  ["Wohnen & Fixkosten", "Versicherungen", "Kredite & Finanzierung", "Streaming & Medien"].includes(t.category)
-                ).length >= 3 && (
-                  <Info
-                    color="red"
-                    title="Viele wiederkehrende Kosten erkannt"
-                    text="Mehrere Fixkosten oder regelmäßige Zahlungen wurden erkannt. Prüfe Verträge, Raten, Versicherungen und Abos auf Einsparpotenzial."
-                  />
-                )}
-
-                {transactions
-                  .filter((t) => ["Kredite & Finanzierung", "Versicherungen", "Wohnen & Fixkosten"].includes(t.category))
-                  .reduce((sum, t) => sum + Math.abs(t.amount), 0) > monthlyIncome * 0.5 && monthlyIncome > 0 && (
-                  <Info
-                    color="yellow"
-                    title="Hohe Fixkostenquote"
-                    text="Deine Fixkosten liegen über 50% deines Einkommens. Das reduziert deinen finanziellen Spielraum deutlich."
-                  />
-                )}
-              </div>
-            </Panel>
-            </div>
-
-            <div className="hidden">
-            <Panel isLightMode={isLightMode} title="Monats-Trend">
-              <div className="h-64 mt-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={
-                    transactions.length > 0
-                      ? transactions.map((item, index) => ({ value: Math.abs(item.amount), name: String(index + 1) }))
-                      : [{ value: 0 }]
-                  }>
-                    <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={5} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              <p className="text-white mt-4">
-                {transactions.length > 0 ? "Dein Monats-Trend basiert auf deinen hinterlegten Daten." : "Noch keine Daten vorhanden. Trage Daten manuell ein oder lade eine Datei hoch."}
-              </p>
-            </Panel>
-            </div>
-
-            
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Fixkosten-Analyse">
-
-              {(() => {
-                const fixedTransactions = transactions.filter((t) =>
-                  ["Wohnen & Fixkosten", "Versicherungen", "Kredite & Finanzierung", "Streaming & Medien"].includes(t.category)
-                );
-
-                const fixedCosts = fixedTransactions.reduce(
-                  (sum, t) => sum + Math.abs(t.amount),
-                  0
-                );
-
-                const fixedRatio =
-                  monthlyIncome > 0
-                    ? Math.round((fixedCosts / monthlyIncome) * 100)
-                    : 0;
-
-                return (
-                  <>
-                    <div className="grid grid-cols-2 gap-4 mt-6">
-                      <Mini
-                        title="Fixkosten"
-                        value={
-                          fixedCosts > 0
-                            ? fixedCosts.toLocaleString("de-DE", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                              }) + "€"
-                            : "—"
-                        }
-                        color="text-red-400"
-                      />
-
-                      <Mini
-                        title="Fixkostenquote"
-                        value={
-                          monthlyIncome > 0
-                            ? fixedRatio + "%"
-                            : "—"
-                        }
-                        color="text-yellow-400"
-                      />
-                    </div>
-
-                    <div className="space-y-3 mt-6">
-                      {fixedTransactions.length === 0 && (
-                        <Info
-                          color="cyan"
-                          title="Keine Fixkosten erkannt"
-                          text="Noch keine regelmäßigen Kosten erkannt."
-                        />
-                      )}
-
-                      {fixedTransactions.length > 0 && (
-                        <Info
-                          color="emerald"
-                          title="Wiederkehrende Kosten erkannt"
-                          text={fixedTransactions.length + " regelmäßige Zahlungen wurden erkannt."}
-                        />
-                      )}
-
-                      {fixedRatio >= 50 && (
-                        <Info
-                          color="red"
-                          title="Hohe Fixkostenquote"
-                          text="Mehr als 50% deines Einkommens gehen für Fixkosten drauf."
-                        />
-                      )}
-
-                      {fixedRatio > 0 && fixedRatio < 50 && (
-                        <Info
-                          color="emerald"
-                          title="Fixkosten im gesunden Bereich"
-                          text="Deine Fixkostenquote liegt aktuell im stabilen Bereich."
-                        />
-                      )}
-                    </div>
-
-                    <div className="mt-6 bg-gray-100 rounded-3xl p-5">
-                      <p className="text-gray-300 font-bold mb-3">
-                        Erkannte Kategorien
-                      </p>
-
-                      <div className="flex flex-wrap gap-3">
-                        {[...new Set(fixedTransactions.map((t) => t.category))].map((cat, index) => (
-                          <div
-                            key={index}
-                            className="bg-white border border-gray-200 px-4 py-2 rounded-2xl text-sm font-bold"
-                          >
-                            {cat}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                );
-              })()}
-
-            </Panel>
-            </div>
-
-
-
-            <div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Sparen">
-
-              {(() => {
-                const shopping = transactions.filter((t) => t.category === "Shopping").reduce((s, t) => s + Math.abs(t.amount), 0);
-                const streaming = transactions.filter((t) => t.category === "Streaming & Medien").reduce((s, t) => s + Math.abs(t.amount), 0);
-                const online = transactions.filter((t) => t.category === "PayPal / Online").reduce((s, t) => s + Math.abs(t.amount), 0);
-
-                const potential = Math.round((shopping * 0.15 + streaming * 0.25 + online * 0.10) * 100) / 100;
-
-                return (
-                  <div className="space-y-5 mt-6">
-                    <Mini
-                      title="Geschätztes Sparen"
-                      value={potential > 0 ? potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
-                      color="text-emerald-400"
-                    />
-
-                    {potential > 0 ? (
-                      <Info
-                        color="emerald"
-                        title="Sparen erkannt"
-                        text={"Du könntest geschätzt ca. " + potential.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ sparen, wenn du Shopping, Streaming und Onlinezahlungen optimierst."}
-                      />
-                    ) : (
-                      <Info
-                        color="cyan"
-                        title="Noch kein Sparen berechnet"
-                        text="Lade einen Kontoauszug hoch oder erfasse Ausgaben, damit SaveWise dein Sparen berechnen kann."
-                      />
-                    )}
-
-                    <Info color="yellow" title="Hinweis" text="Die Berechnung ist eine erste Schätzung und wird später durch KI-Analyse weiter verbessert." />
-                  </div>
-                );
-              })()}
-
-            </Panel>
-            </div>
-
-
-<div className={analyseSection === "smart" ? "block pt-8" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Ausgabenverteilung">
-              <div className="h-64 mt-6">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={
-                        transactions.length > 0
-                          ? Object.values(
-                                transactions
-                                  .filter((item) => item.amount < 0)
-                                  .reduce((groups: any, item) => {
-                                    const category = item.category || "Sonstiges";
-                                    groups[category] = groups[category] || { name: category, value: 0 };
-                                    groups[category].value += Math.abs(item.amount);
-                                    return groups;
-                                  }, {})
-                              )
-                          : [{ name: "Keine Daten", value: 1 }]
-                      }
-                      dataKey="value"
-                      innerRadius={55}
-                      outerRadius={90}
-                      paddingAngle={5}
-                    >
-                      {["#22c55e", "#06b6d4", "#facc15", "#f472b6"].map((color, index) => (
-                        <Cell key={index} fill={color} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="grid gap-3 mt-4 text-sm">
-                {transactions.length > 0 ? (
-                  Object.values(
-                    transactions
-                      .filter((item) => item.amount < 0)
-                      .reduce((groups: any, item) => {
-                        const category = item.category || "Sonstiges";
-                        groups[category] = groups[category] || { name: category, value: 0 };
-                        groups[category].value += Math.abs(item.amount);
-                        return groups;
-                      }, {})
-                  ).map((item: any, index) => (
-                    <p key={index} className="text-white">
-                      ● {item.name}: {item.value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                    </p>
-                  ))
-                ) : (
-                  <p className="text-white">Noch keine Ausgaben vorhanden.</p>
-                )}
-              </div>
-            </Panel>
-            </div>
-
-            <div className="hidden">
-            <Panel isLightMode={isLightMode} title="Monatsübersicht">
-              <div className="grid gap-4 mt-6">
-                <Mini title="Kategorie" value={transactions.length > 0 ? topCategory : "—"} color="text-cyan-400" />
-                <Mini title="Analysen" value={history.length > 0 ? String(history.length) : "—"} color="text-emerald-400" />
-                <Mini title="Transaktionen" value={transactions.length > 0 ? String(transactions.length) : "—"} color="text-yellow-400" />
-              </div>
-            </Panel>
-            </div>
-
-            <div className="hidden">
-            <Panel isLightMode={isLightMode} title="Analyse Verlauf">
-              <div className="space-y-4 mt-6">
-                {history.length === 0 && <p className={showSettings ? "text-emerald-400" : "text-gray-300"}>Noch keine Analysen vorhanden.</p>}
-                {history.map((item, index) => (
-                  <div key={index} className="bg-gray-100 p-4 rounded-2xl text-gray-300">
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </Panel>
-            </div>
-
-            <div className={analyseSection === "transactions" ? "block pt-28" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Letzte Transaktionen">
-              <div className="space-y-4 mt-6">
-                {allExpenseItems.length === 0 && (
-                  <p className="text-white">Noch keine Ausgaben vorhanden.</p>
-                )}
-
-                {allExpenseItems.map((item, index) => (
-                  <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
-                    <div>
-                      <p className="font-bold">{item.name}</p>
-                      <p className="text-gray-300 text-sm">{item.category}</p>
-                    </div>
-
-                    <p className={item.amount >= 0 ? "text-emerald-400 font-black" : "text-red-400 font-black"}>
-                      {Math.abs(item.amount).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-            </div>
-          </div>
-          </>
-        )}
-
-        {activeTab === "report" && (
-          <div className="space-y-6 mt-6">
-
-            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-            {reportSection === "menu" && (
+            {financeSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+            {financeSection === "menu" && (
               <>
-                <div className="grid gap-4">
+                <div className="px-1 mb-2">
+                <p className="text-xs font-black uppercase tracking-[0.28em] text-emerald-300">
+                  Übersicht
+                </p>
+                <p className="mt-1 text-sm text-white/45">
+                  Deine Finanzen kompakt
+                </p>
+              </div>
+
+              <div className="mb-4">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.28em] text-emerald-300 font-black">
+                      SaveWise AI
+                    </p>
+
+                    <h2 className="text-2xl font-black text-white mt-2">
+                      {aiFinanceStatus || aiInsight || 'Finanzlage stabil'}
+                    </h2>
+                  </div>
+
+                  <div className="w-14 h-14 rounded-3xl bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center text-2xl">
+                    🤖
+                  </div>
+
+                </div>
+
+                {smartNotifications.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+
+                    {smartNotifications.map((note, idx) => (
+                      <div
+                        key={idx}
+                        className="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/70"
+                      >
+                        {note}
+                      </div>
+                    ))}
+
+                  </div>
+                )}
+
+              </div>
+
+              <div className="grid gap-4">
                   {[
                     {
                       key: "upload",
-                      label: "Datei-Upload",
+                      label: "Kontoauszüge & Uploads",
                       text: "Kontoauszüge als PDF oder CSV hochladen und analysieren"
                     },
                     {
                       key: "manual",
-                      label: "Manuelle Eingabe",
+                      label: "Ausgaben & Verträge",
                       text: "Einkommen und Ausgaben händisch eintragen"
                     },
                     {
+                      key: "transactions",
+                      label: "Alle Ausgaben",
+                      text: "Manuelle Ausgaben und erkannte Transaktionen anzeigen"
+                    },
+                    {
                       key: "pdf",
-                      label: "PDF-Report",
-                      text: "Professionellen Finanzreport erstellen"
+                      label: "Finanzexport",
+                      text: "Daten exportieren und Reports erstellen"
                     }
                   ].map((item) => (
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => setReportSection(item.key)}
+                      onClick={() => setFinanceSection(item.key)}
                       className={
                         "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
                         (isLightMode
@@ -2187,12 +2264,12 @@ setSpentThisMonth(0);
               </>
             )}
 
-            {reportSection !== "menu" && (
+            {financeSection !== "menu" && (
               <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
                 <button
                   type="button"
                   onClick={() => {
-                    setReportSection("menu");
+                    setFinanceSection("menu");
                     window.scrollTo({ top: 0, behavior: "auto" });
                   }}
                   className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
@@ -2202,8 +2279,32 @@ setSpentThisMonth(0);
               </div>
             )}
 
-            <div className={reportSection === "upload" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Datei-Upload">
+
+            <div className={financeSection === "transactions" ? "block pt-28" : "hidden"}>
+              <Panel isLightMode={isLightMode} title="Alle Ausgaben">
+                <div className="space-y-4 mt-6">
+                  {allExpenseItems.length === 0 && (
+                    <p className="text-white">Noch keine Ausgaben vorhanden.</p>
+                  )}
+
+                  {allExpenseItems.map((item, index) => (
+                    <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-black">{item.name}</p>
+                        <p className="text-black text-sm">{item.category}</p>
+                      </div>
+
+                      <p className="text-red-400 font-black">
+                        {Math.abs(item.amount).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            </div>
+
+            <div className={financeSection === "upload" ? "block pt-28" : "hidden"}>
+              <Panel isLightMode={isLightMode} title="Kontoauszüge & Uploads">
                 <p className="text-white mt-4">
                   Lade deine Kontoauszüge als PDF oder CSV hoch.
                 </p>
@@ -2272,8 +2373,8 @@ setSpentThisMonth(0);
             </div>
 
             
-            <div className={reportSection === "manual" ? "block pt-28" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Manuelle Eingabe">
+            <div className={financeSection === "manual" ? "block pt-28" : "hidden"}>
+              <Panel isLightMode={isLightMode} title="Ausgaben & Verträge">
                 <p className="text-white mt-4">
                   Trage dein monatliches Einkommen und deine bisherigen Ausgaben manuell ein, falls nichts aus einer Datei erkannt wurde.
                 </p>
@@ -2506,7 +2607,7 @@ setSpentThisMonth(0);
               </Panel>
             </div>
 
-            <div className={reportSection === "pdf" ? "block pt-28" : "hidden"}>
+            <div className={financeSection === "pdf" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="PDF-Report">
                 <p className="text-white mt-4">
                   Erstelle einen professionellen Finanzreport.
@@ -2615,7 +2716,7 @@ setSpentThisMonth(0);
               {introStep === 4 && (
                 <div className="grid gap-3 text-left">
                   <div className="rounded-2xl bg-white/10 p-4">
-                    <p className="text-white font-black">Datei-Upload</p>
+                    <p className="text-white font-black">Kontoauszüge & Uploads</p>
                     <p className="text-gray-300 text-sm mt-1">PDF, CSV oder Screenshot</p>
                   </div>
                   <div className="rounded-2xl bg-white/10 p-4">
@@ -2764,6 +2865,26 @@ setSpentThisMonth(0);
         Verwalte deine App-Daten und Optionen.
       </p>
 
+      <div className="mt-6 rounded-3xl bg-gray-100 border border-gray-200 p-5">
+        <p className="text-black font-black">
+          Echte AI optional
+        </p>
+
+        <p className="text-black text-sm mt-2 leading-relaxed">
+          Ohne Key nutzt SaveWise lokale Datenlogik. Mit kostenlosem OpenRouter-Key kann der Fragenbereich ein echtes AI-Modell nutzen.
+        </p>
+
+        <input
+          value={aiApiKey}
+          onChange={(e) => {
+            setAiApiKey(e.target.value);
+            localStorage.setItem("savewise_ai_api_key", e.target.value);
+          }}
+          placeholder="Optionaler OpenRouter API-Key"
+          className="w-full mt-4 bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
+        />
+      </div>
+
       <div className="space-y-4 mt-8">
         <button
           type="button"
@@ -2825,16 +2946,91 @@ setSpentThisMonth(0);
   </div>
 )}
 
+      <button
+        type="button"
+        onClick={() => setIsAiHubOpen((open) => !open)}
+        className="fixed right-5 bottom-28 z-[9999] w-20 h-20 rounded-[28px] bg-gradient-to-br from-emerald-300 via-emerald-500 to-cyan-400 shadow-[0_18px_60px_rgba(16,185,129,0.55)] border border-white/30 flex items-center justify-center text-4xl active:scale-95 transition-all animate-pulse"
+        aria-label="SaveWise AI öffnen"
+      >
+        <span className="drop-shadow-2xl">🤖</span>
+      </button>
+
+      {isAiHubOpen && (
+        <div className="fixed left-4 right-4 bottom-32 z-[9998] rounded-[34px] bg-[#101522]/95 border border-emerald-400/20 p-5 shadow-[0_0_80px_rgba(16,185,129,0.35)] backdrop-blur-xl">
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-white text-xl font-black">
+                Frage SaveWise AI
+              </p>
+
+              <p className="text-white/50 text-sm mt-1">
+                Nutzt deine echten Finanzdaten lokal.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsAiHubOpen(false)}
+              className="w-11 h-11 rounded-2xl bg-white/10 text-white font-black"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mt-5">
+            {[
+              "Wo kann ich sparen?",
+              "Wie hoch sind meine Fixkosten?",
+              "Warum ist mein Score so?",
+              "Kann ich mir Urlaub leisten?"
+            ].map((q) => (
+              <button
+                key={q}
+                type="button"
+                onClick={() => askQuickAI(q)}
+                className="rounded-2xl bg-white/10 border border-white/10 p-3 text-white text-sm font-bold"
+              >
+                {q.replace("?", "")}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <input
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              placeholder="z.B. Wo kann ich sparen?"
+              className="flex-1 bg-white text-black border border-white/20 rounded-2xl px-4 py-4 placeholder:text-gray-500 outline-none"
+            />
+
+            <button
+              type="button"
+              onClick={askAI}
+              className="bg-emerald-400 text-black rounded-2xl px-5 font-black"
+            >
+              Fragen
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl bg-black/20 border border-white/10 p-4 max-h-40 overflow-y-auto">
+            <p className="text-emerald-300 text-xs font-black uppercase tracking-[0.18em]">
+              Antwort
+            </p>
+
+            <p className="text-white/85 mt-3 leading-relaxed">
+              {chatReply}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/85 border border-white/20 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl shadow-black/50 z-50">
         <NavButton active={activeTab === "home"} onClick={() => { setShowSettings(false); setActiveTab("home"); }}>
           <Home size={28} />
         </NavButton>
 
-        <NavButton active={activeTab === "analyse"} onClick={() => { setShowSettings(false); setActiveTab("analyse"); }}>
-          <BarChart3 size={28} />
-        </NavButton>
-
-        <NavButton active={activeTab === "report"} onClick={() => { setShowSettings(false); setActiveTab("report"); }}>
+        <NavButton active={activeTab === "finance"} onClick={() => { setShowSettings(false); setActiveTab("finance"); }}>
           <FileText size={28} />
         </NavButton>
 
@@ -2986,7 +3182,7 @@ function Panel(props: {
 
 function Mini(props: { title: string; value: string; color: string }) {
   return (
-    <div className="bg-gray-100 rounded-2xl p-5">
+    <div className="bg-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center min-h-[118px] overflow-hidden">
       <p className="text-gray-300">{props.title}</p>
       <p className={`text-xl font-black mt-2 ${props.color}`}>{props.value}</p>
     </div>
