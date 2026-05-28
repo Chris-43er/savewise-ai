@@ -51,9 +51,8 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [manualExpenseCategory, setManualExpenseCategory] = useState("Handy");
   const [manualExpenseAmount, setManualExpenseAmount] = useState("");
   const [manualExpenseRecurring, setManualExpenseRecurring] = useState(true);
-  const [manualExpenseInterval, setManualExpenseInterval] = useState("monatlich");
   const [manualExpenses, setManualExpenses] = useState<
-    { id: number; name: string; category: string; amount: number; recurring: boolean; interval?: string; createdAt: string }[]
+    { id: number; name: string; category: string; amount: number; recurring: boolean; createdAt: string }[]
   >([]);
 
   const [chatMessage, setChatMessage] = useState("");
@@ -751,7 +750,7 @@ setSpentThisMonth(0);
       ? "Setze ein Wochenlimit für spontane Käufe."
       : topCategory === "Essen"
       ? "Plane 2–3 Mahlzeiten vor, um Ausgaben zu glätten."
-      : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben und wiederkehrenden Kosten.";
+      : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben.";
 
   const allExpenseItems = [
     ...transactions
@@ -767,130 +766,6 @@ setSpentThisMonth(0);
       amount: item.amount
     }))
   ];
-
-  const contractExpenses = manualExpenses.filter((item) => item.recurring);
-
-  const contractMonthlyTotal = contractExpenses.reduce((sum, item) => {
-    const interval = item.interval || "monatlich";
-
-    if (interval === "jährlich") return sum + item.amount / 12;
-    if (interval === "vierteljährlich") return sum + item.amount / 3;
-    return sum + item.amount;
-  }, 0);
-
-  const contractAnnualTotal = contractMonthlyTotal * 12;
-
-  const contractRatio =
-    monthlyIncome > 0 ? Math.round((contractMonthlyTotal / monthlyIncome) * 100) : 0;
-
-
-
-  const streamingCosts = manualExpenses
-    .filter((item) =>
-      item.category.toLowerCase().includes("stream") ||
-      item.name.toLowerCase().includes("netflix") ||
-      item.name.toLowerCase().includes("spotify") ||
-      item.name.toLowerCase().includes("disney")
-    )
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  const restaurantCosts = manualExpenses
-    .filter((item) =>
-      item.category.toLowerCase().includes("restaurant")
-    )
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  const insuranceCosts = manualExpenses
-    .filter((item) =>
-      item.category.toLowerCase().includes("versicherung")
-    )
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  const estimatedMonthEnd =
-    monthlyIncome - totalMonthlyExpenses;
-
-  const budgetHealth =
-    totalMonthlyExpenses > monthlyBudget
-      ? "kritisch"
-      : totalMonthlyExpenses > monthlyBudget * 0.85
-      ? "angespannt"
-      : "stabil";
-
-  const aiFinanceStatus =
-    savingsRate >= 25 && contractRatio < 40
-      ? "Sehr stabil"
-      : savingsRate >= 10
-      ? "Solide"
-      : "Optimierbar";
-
-  const aiWarnings = [];
-
-  if (streamingCosts > 40) {
-    aiWarnings.push(
-      "Mehrere Streamingdienste erkannt. Prüfe ungenutzte Abos."
-    );
-  }
-
-  if (restaurantCosts > 150) {
-    aiWarnings.push(
-      "Restaurantkosten sind diesen Monat auffällig hoch."
-    );
-  }
-
-  if (contractRatio > 50) {
-    aiWarnings.push(
-      "Deine Fixkostenquote ist kritisch hoch."
-    );
-  }
-
-  if (insuranceCosts > 250) {
-    aiWarnings.push(
-      "Versicherungskosten wirken überdurchschnittlich hoch."
-    );
-  }
-
-  if (totalMonthlyExpenses > monthlyBudget) {
-    aiWarnings.push(
-      "Du liegst aktuell über deinem Monatsbudget."
-    );
-  }
-
-  const aiRecommendations = [];
-
-  if (streamingCosts > 0) {
-    aiRecommendations.push(
-      "Streaming-Abos regelmäßig prüfen und ungenutzte Dienste kündigen."
-    );
-  }
-
-  if (restaurantCosts > 0) {
-    aiRecommendations.push(
-      "Restaurant- und Lieferkosten durch Wochenlimits reduzieren."
-    );
-  }
-
-  if (contractRatio > 35) {
-    aiRecommendations.push(
-      "Fixkosten optimieren: Versicherungen, Strom und Verträge vergleichen."
-    );
-  }
-
-  if (savingsRate < 15) {
-    aiRecommendations.push(
-      "Sparquote verbessern: Ziel mindestens 20% Nettoüberschuss."
-    );
-  }
-
-  const contractInsight =
-    contractExpenses.length === 0
-      ? "Noch keine Verträge oder Fixkosten eingetragen."
-      : contractRatio >= 50
-      ? "Deine Fixkosten sind sehr hoch. Prüfe Miete, Versicherungen, Verträge und Abos."
-      : contractRatio >= 35
-      ? "Deine Fixkosten sind erhöht. Einzelne Verträge könnten optimierbar sein."
-      : contractRatio >= 20
-      ? "Deine Fixkosten wirken solide, sollten aber regelmäßig geprüft werden."
-      : "Deine Fixkostenquote ist aktuell sehr gesund.";
 
   const manualExpenseInsight =
     manualExpenses.length === 0
@@ -923,7 +798,6 @@ setSpentThisMonth(0);
         category: manualExpenseCategory,
         amount,
         recurring: manualExpenseRecurring,
-        interval: manualExpenseInterval,
         createdAt: new Date().toISOString()
       },
       ...manualExpenses
@@ -932,7 +806,6 @@ setSpentThisMonth(0);
     setManualExpenseName("");
     setManualExpenseAmount("");
     setManualExpenseRecurring(true);
-    setManualExpenseInterval("monatlich");
   }
 
   function deleteManualExpense(id: number) {
@@ -1148,198 +1021,6 @@ setSpentThisMonth(0);
             )}
 
 
-
-
-            {homeSection === "ai" && (
-              <div className="space-y-6">
-
-                <button
-                  type="button"
-                  onClick={() => setHomeSection("overview")}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
-                >
-                  ← Zurück zur Übersicht
-                </button>
-
-                <Panel isLightMode={isLightMode} title="AI Finanzanalyse">
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">
-                        Finanzstatus
-                      </p>
-
-                      <p className="text-3xl font-black text-emerald-400 mt-3">
-                        {aiFinanceStatus}
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">
-                        Budgetstatus
-                      </p>
-
-                      <p className="text-3xl font-black text-cyan-400 mt-3">
-                        {budgetHealth}
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">
-                        Monatsprognose
-                      </p>
-
-                      <p className="text-3xl font-black text-yellow-400 mt-3">
-                        {estimatedMonthEnd.toLocaleString("de-DE", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2
-                        })}€
-                      </p>
-                    </div>
-
-                  </div>
-
-                  <div className="mt-6 rounded-3xl bg-red-400/10 border border-red-400/20 p-5">
-
-                    <p className="font-black text-red-400">
-                      AI Warnungen
-                    </p>
-
-                    <div className="space-y-3 mt-4">
-
-                      {aiWarnings.length === 0 && (
-                        <p className="text-white">
-                          Keine kritischen Risiken erkannt.
-                        </p>
-                      )}
-
-                      {aiWarnings.map((item, index) => (
-                        <div
-                          key={index}
-                          className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white"
-                        >
-                          ⚠ {item}
-                        </div>
-                      ))}
-
-                    </div>
-
-                  </div>
-
-                  <div className="mt-6 rounded-3xl bg-emerald-400/10 border border-emerald-400/20 p-5">
-
-                    <p className="font-black text-emerald-400">
-                      AI Empfehlungen
-                    </p>
-
-                    <div className="space-y-3 mt-4">
-
-                      {aiRecommendations.length === 0 && (
-                        <p className="text-white">
-                          Deine Finanzstruktur wirkt aktuell stabil.
-                        </p>
-                      )}
-
-                      {aiRecommendations.map((item, index) => (
-                        <div
-                          key={index}
-                          className="bg-white/5 border border-white/10 rounded-2xl p-4 text-white"
-                        >
-                          💡 {item}
-                        </div>
-                      ))}
-
-                    </div>
-
-                  </div>
-
-                </Panel>
-
-              </div>
-            )}
-
-
-            {homeSection === "contracts" && (
-              <div className="space-y-6">
-                <button
-                  type="button"
-                  onClick={() => setHomeSection("overview")}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
-                >
-                  ← Zurück zur Übersicht
-                </button>
-
-                <Panel isLightMode={isLightMode} title="Verträge & Fixkosten">
-                  <p className="text-white mt-4">
-                    Hier siehst du deine wiederkehrenden Kosten, Verträge und monatlichen Belastungen.
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">Monatliche Fixkosten</p>
-                      <p className="text-3xl font-black text-red-400 mt-3">
-                        {contractMonthlyTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">Jahresbelastung</p>
-                      <p className="text-3xl font-black text-yellow-400 mt-3">
-                        {contractAnnualTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                      </p>
-                    </div>
-
-                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                      <p className="text-black font-black">Fixkostenquote</p>
-                      <p className="text-3xl font-black text-cyan-400 mt-3">
-                        {contractRatio}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
-                    <p className="font-black text-black">AI Bewertung</p>
-                    <p className="text-black mt-2 leading-relaxed">
-                      {contractInsight}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mt-6">
-                    {contractExpenses.length === 0 && (
-                      <p className="text-white">
-                        Noch keine Fixkosten oder Verträge vorhanden. Füge sie unter Report → Manuelle Eingabe hinzu.
-                      </p>
-                    )}
-
-                    {contractExpenses.map((item) => (
-                      <div key={item.id} className="rounded-3xl bg-gray-100 border border-gray-200 p-5 flex items-center justify-between gap-4">
-                        <div>
-                          <p className="font-black text-black">{item.name}</p>
-                          <p className="text-sm text-black mt-1">
-                            {item.category} · {item.interval || "monatlich"}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="font-black text-red-400">
-                            {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-                          <p className="text-xs text-black mt-1">
-                            {item.interval === "jährlich"
-                              ? "≈ " + (item.amount / 12).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
-                              : item.interval === "vierteljährlich"
-                              ? "≈ " + (item.amount / 3).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
-                              : "monatlich"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Panel>
-              </div>
-            )}
-
             {homeSection === "overview" && (
 <div id="home-menu" className="grid gap-4">
   {[
@@ -1362,17 +1043,6 @@ setSpentThisMonth(0);
       key: "budget",
       label: "Monatsbudget",
       text: "Kontrolliere dein monatliches Ausgabenlimit"
-    },
-    {
-      key: "ai",
-      label: "AI Finanzanalyse",
-      text: "Erkenne Risiken, Spartipps und Finanzprognosen"
-    },
-
-    {
-      key: "contracts",
-      label: "Verträge & Fixkosten",
-      text: "Prüfe wiederkehrende Kosten, Verträge und Abos"
     },
     {
       key: "trend",
@@ -2320,31 +1990,13 @@ setSpentThisMonth(0);
                       className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
                     />
 
-                    <select
-                      value={manualExpenseInterval}
-                      onChange={(e) => {
-                        setManualExpenseInterval(e.target.value);
-                        setManualExpenseRecurring(e.target.value !== "einmalig");
-                      }}
-                      className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black outline-none focus:border-emerald-400"
-                    >
-                      <option value="monatlich">Monatlich</option>
-                      <option value="jährlich">Jährlich</option>
-                      <option value="vierteljährlich">Vierteljährlich</option>
-                      <option value="einmalig">Einmalig</option>
-                    </select>
-
                     <label className="flex items-center gap-3 text-black font-bold">
                       <input
                         type="checkbox"
                         checked={manualExpenseRecurring}
-                        onChange={(e) => {
-                          setManualExpenseRecurring(e.target.checked);
-                          if (!e.target.checked) setManualExpenseInterval("einmalig");
-                          if (e.target.checked && manualExpenseInterval === "einmalig") setManualExpenseInterval("monatlich");
-                        }}
+                        onChange={(e) => setManualExpenseRecurring(e.target.checked)}
                       />
-                      Als Fixkosten / Vertrag berücksichtigen
+                      Wiederkehrende monatliche Ausgabe
                     </label>
 
                     <button
@@ -2391,7 +2043,7 @@ setSpentThisMonth(0);
                         <div>
                           <p className="font-black text-black">{item.name}</p>
                           <p className="text-sm text-black">
-                            {item.category} · {item.interval || (item.recurring ? "monatlich" : "einmalig")}
+                            {item.category} · {item.recurring ? "monatlich" : "einmalig"}
                           </p>
                         </div>
 
