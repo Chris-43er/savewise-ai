@@ -46,13 +46,6 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [topCategory, setTopCategory] = useState("Streaming");
   const [history, setHistory] = useState<string[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>(defaultTransactions);
-  const [manualExpenseName, setManualExpenseName] = useState("");
-  const [manualExpenseCategory, setManualExpenseCategory] = useState("Handy");
-  const [manualExpenseAmount, setManualExpenseAmount] = useState("");
-  const [manualExpenseRecurring, setManualExpenseRecurring] = useState(true);
-  const [manualExpenses, setManualExpenses] = useState<
-    { id: number; name: string; category: string; amount: number; recurring: boolean; createdAt: string }[]
-  >([]);
 
   const [chatMessage, setChatMessage] = useState("");
   const [chatReply, setChatReply] = useState("Hallo 👋 Ich bin dein AI Finanzassistent.");
@@ -137,21 +130,6 @@ const [savedAmount, setSavedAmount] = useState(0);
     localStorage.setItem("savewise_goal_amount", String(goalAmount));
     localStorage.setItem("savewise_saved_amount", String(savedAmount));
   }, [savingGoal, goalAmount, savedAmount]);
-
-  useEffect(() => {
-    const savedManualExpenses = localStorage.getItem("savewise_manual_expenses");
-    if (savedManualExpenses) {
-      try {
-        setManualExpenses(JSON.parse(savedManualExpenses));
-      } catch {
-        setManualExpenses([]);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("savewise_manual_expenses", JSON.stringify(manualExpenses));
-  }, [manualExpenses]);
 
   function askAI() {
   if (!chatMessage.trim()) return;
@@ -681,8 +659,7 @@ setSpentThisMonth(0);
       spentThisMonth,
       topCategory,
       history,
-      transactions,
-      manualExpenses
+      transactions
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -738,54 +715,6 @@ setSpentThisMonth(0);
       : topCategory === "Essen"
       ? "Plane 2–3 Mahlzeiten vor, um Ausgaben zu glätten."
       : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben.";
-
-  const manualExpenseTotal = manualExpenses.reduce((sum, item) => sum + item.amount, 0);
-  const manualRecurringTotal = manualExpenses
-    .filter((item) => item.recurring)
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  const totalMonthlyExpenses = spentThisMonth + manualExpenseTotal;
-  const remainingAfterManual = monthlyIncome - totalMonthlyExpenses;
-
-  const fixedCostRatio =
-    monthlyIncome > 0 ? Math.round((manualRecurringTotal / monthlyIncome) * 100) : 0;
-
-  const manualExpenseInsight =
-    manualExpenses.length === 0
-      ? "Noch keine eigenen Ausgaben eingetragen."
-      : fixedCostRatio >= 40
-      ? "Deine Fixkosten sind sehr hoch. Prüfe Verträge, Versicherungen und Abos."
-      : fixedCostRatio >= 25
-      ? "Deine Fixkosten sind spürbar. Hier liegt mögliches Sparpotenzial."
-      : "Deine manuellen Ausgaben wirken aktuell kontrollierbar.";
-
-  function addManualExpense() {
-    const amount = Number(manualExpenseAmount.replace(",", "."));
-
-    if (!manualExpenseName.trim() || !Number.isFinite(amount) || amount <= 0) {
-      return;
-    }
-
-    setManualExpenses([
-      {
-        id: Date.now(),
-        name: manualExpenseName.trim(),
-        category: manualExpenseCategory,
-        amount,
-        recurring: manualExpenseRecurring,
-        createdAt: new Date().toISOString()
-      },
-      ...manualExpenses
-    ]);
-
-    setManualExpenseName("");
-    setManualExpenseAmount("");
-    setManualExpenseRecurring(true);
-  }
-
-  function deleteManualExpense(id: number) {
-    setManualExpenses(manualExpenses.filter((item) => item.id !== id));
-  }
 
   return (
     <>
@@ -960,12 +889,12 @@ setSpentThisMonth(0);
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card isLightMode={isLightMode} title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card isLightMode={isLightMode} title="Ausgaben" value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
+              <Card isLightMode={isLightMode} title="Ausgaben" value={spentThisMonth > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
               <Card isLightMode={isLightMode}
                 title="Übrig"
                 value={
-                  Number.isFinite(monthlyIncome) && Number.isFinite(totalMonthlyExpenses) && monthlyIncome > 0
-                    ? remainingAfterManual.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
+                  Number.isFinite(monthlyIncome) && Number.isFinite(spentThisMonth) && monthlyIncome > 0
+                    ? (monthlyIncome - spentThisMonth).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
                     : "—"
                 }
                 color="text-yellow-400"
@@ -1893,131 +1822,6 @@ setSpentThisMonth(0);
                       placeholder="z.B. 840"
                       className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none text-white"
                     />
-                  </div>
-                </div>
-
-
-                <div className="mt-8 rounded-[28px] border border-gray-200 bg-gray-100 p-5">
-                  <h3 className="text-2xl font-black text-black">
-                    Eigene Ausgaben
-                  </h3>
-
-                  <p className="mt-2 text-black">
-                    Trage regelmäßige oder einmalige Kosten ein, z.B. Handy, Versicherungen, Miete oder Abos.
-                  </p>
-
-                  <div className="grid gap-4 mt-5">
-                    <input
-                      value={manualExpenseName}
-                      onChange={(e) => setManualExpenseName(e.target.value)}
-                      placeholder="z.B. Handyvertrag, Versicherung, Netflix"
-                      className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
-                    />
-
-                    <select
-                      value={manualExpenseCategory}
-                      onChange={(e) => setManualExpenseCategory(e.target.value)}
-                      className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black outline-none focus:border-emerald-400"
-                    >
-                      <option>Handy</option>
-                      <option>Versicherung</option>
-                      <option>Miete/Abtrag</option>
-                      <option>Strom</option>
-                      <option>Internet</option>
-                      <option>Streaming</option>
-                      <option>Fitness</option>
-                      <option>Auto</option>
-                      <option>Lebensmittel</option>
-                      <option>Shopping</option>
-                      <option>Kosmetik</option>
-                      <option>Tanken</option>
-                      <option>KFZ-Steuer</option>
-                      <option>Abfallgebühren</option>
-                      <option>Restaurant</option>
-                      <option>Urlaub</option>
-                      <option>Sonstiges</option>
-                    </select>
-
-                    <input
-                      value={manualExpenseAmount}
-                      onChange={(e) => setManualExpenseAmount(e.target.value)}
-                      placeholder="Betrag pro Monat, z.B. 39,99"
-                      inputMode="decimal"
-                      className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
-                    />
-
-                    <label className="flex items-center gap-3 text-black font-bold">
-                      <input
-                        type="checkbox"
-                        checked={manualExpenseRecurring}
-                        onChange={(e) => setManualExpenseRecurring(e.target.checked)}
-                      />
-                      Wiederkehrende monatliche Ausgabe
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={addManualExpense}
-                      className="w-full bg-emerald-400 text-black rounded-2xl p-4 font-black active:scale-[0.98] transition-all"
-                    >
-                      Ausgabe hinzufügen
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mt-5">
-                    <div className="rounded-2xl bg-white p-4 border border-gray-200">
-                      <p className="text-black font-bold">Eigene Ausgaben</p>
-                      <p className="text-2xl font-black text-red-400 mt-2">
-                        {manualExpenseTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-4 border border-gray-200">
-                      <p className="text-black font-bold">Fixkostenquote</p>
-                      <p className="text-2xl font-black text-cyan-400 mt-2">
-                        {fixedCostRatio}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 rounded-2xl bg-white border border-gray-200 p-4">
-                    <p className="font-black text-black">AI Einschätzung</p>
-                    <p className="text-black mt-2">
-                      {manualExpenseInsight}
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mt-5">
-                    {manualExpenses.length === 0 && (
-                      <p className="text-black">
-                        Noch keine eigenen Ausgaben eingetragen.
-                      </p>
-                    )}
-
-                    {manualExpenses.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white border border-gray-200 p-4">
-                        <div>
-                          <p className="font-black text-black">{item.name}</p>
-                          <p className="text-sm text-black">
-                            {item.category} · {item.recurring ? "monatlich" : "einmalig"}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="font-black text-red-400">
-                            {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() => deleteManualExpense(item.id)}
-                            className="text-xs font-black text-black underline mt-1"
-                          >
-                            Löschen
-                          </button>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
 

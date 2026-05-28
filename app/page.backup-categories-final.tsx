@@ -1921,7 +1921,7 @@ setSpentThisMonth(0);
                     >
                       <option>Handy</option>
                       <option>Versicherung</option>
-                      <option>Miete/Abtrag</option>
+                      <option>Miete</option>
                       <option>Strom</option>
                       <option>Internet</option>
                       <option>Streaming</option>
@@ -1929,12 +1929,6 @@ setSpentThisMonth(0);
                       <option>Auto</option>
                       <option>Lebensmittel</option>
                       <option>Shopping</option>
-                      <option>Kosmetik</option>
-                      <option>Tanken</option>
-                      <option>KFZ-Steuer</option>
-                      <option>Abfallgebühren</option>
-                      <option>Restaurant</option>
-                      <option>Urlaub</option>
                       <option>Sonstiges</option>
                     </select>
 
