@@ -435,80 +435,15 @@ ${smartTip}`;
   function createPdf() {
     const doc = new jsPDF();
 
-    const income = monthlyIncome || 0;
-    const expenses = spentThisMonth || 0;
-    const remaining = income - expenses;
-    const savingsRate = income > 0 ? Math.max(0, Math.round((remaining / income) * 100)) : 0;
-
-    const categoryGroups = transactions
-      .filter((item) => item.amount < 0)
-      .reduce((groups: any, item) => {
-        const category = item.category || "Sonstiges";
-        groups[category] = (groups[category] || 0) + Math.abs(item.amount);
-        return groups;
-      }, {});
-
-    const topCategories = Object.entries(categoryGroups)
-      .sort((a: any, b: any) => b[1] - a[1])
-      .slice(0, 5);
-
     doc.setFontSize(22);
-    doc.text("SaveWise AI Finanzreport", 20, 20);
+    doc.text("SaveWise AI Report", 20, 20);
+    doc.setFontSize(14);
+    doc.text("Sparscore: " + savingScore + "/100", 20, 50);
+    doc.text("Sparpotenzial: " + monthlySavings + " Euro", 20, 65);
+    doc.text("Ausgabenlimit: " + monthlyBudget + " Euro", 20, 80);
+    doc.text("Top Kategorie: " + topCategory, 20, 95);
 
-    doc.setFontSize(11);
-    doc.text("Erstellt am: " + new Date().toLocaleDateString("de-DE"), 20, 30);
-
-    doc.setFontSize(16);
-    doc.text("Finanzübersicht", 20, 50);
-
-    doc.setFontSize(12);
-    doc.text("Einkommen: " + income.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " Euro", 20, 65);
-    doc.text("Ausgaben: " + expenses.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " Euro", 20, 78);
-    doc.text("Übrig: " + remaining.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " Euro", 20, 91);
-    doc.text("Sparquote: " + savingsRate + "%", 20, 104);
-    doc.text("Sparscore: " + (savingScore > 0 ? savingScore + "/100" : "nicht berechnet"), 20, 117);
-
-    doc.setFontSize(16);
-    doc.text("Top Ausgabenkategorien", 20, 140);
-
-    doc.setFontSize(12);
-    if (topCategories.length === 0) {
-      doc.text("Noch keine Kategorien erkannt.", 20, 155);
-    } else {
-      topCategories.forEach(([category, amount]: any, index) => {
-        doc.text(
-          (index + 1) + ". " + category + ": " + amount.toLocaleString("de-DE", { minimumFractionDigits: 2 }) + " Euro",
-          20,
-          155 + index * 12
-        );
-      });
-    }
-
-    const aiY = topCategories.length > 0 ? 225 : 175;
-
-    doc.setFontSize(16);
-    doc.text("AI Einschätzung", 20, aiY);
-
-    doc.setFontSize(12);
-
-    let assessment = "Noch keine ausreichenden Finanzdaten vorhanden.";
-
-    if (income > 0 && expenses > 0) {
-      if (expenses / income > 0.9) {
-        assessment = "Kritisch: Deine Ausgaben liegen sehr nah an deinem Einkommen.";
-      } else if (expenses / income > 0.75) {
-        assessment = "Achtung: Deine Ausgaben sind erhöht. Prüfe variable Kosten und Fixkosten.";
-      } else {
-        assessment = "Stabil: Deine Finanzen wirken aktuell kontrolliert.";
-      }
-    }
-
-    doc.text(assessment, 20, aiY + 15, { maxWidth: 170 });
-
-    doc.setFontSize(10);
-    doc.text("Dieser Report basiert auf lokal hinterlegten oder hochgeladenen Daten.", 20, 285);
-
-    doc.save("savewise-ai-finanzreport.pdf");
+    doc.save("savewise-report.pdf");
   }
 
   function resetAllData() {
