@@ -36,7 +36,7 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [analysisResult, setAnalysisResult] = useState("");
 
   const [savingScore, setSavingScore] = useState(0);
-  const [monthlySavings, setMonthlySavings] = useState(0);
+  const [monthlySavings, setMonthlySavings] = useState(120);
   const [monthlyBudget, setMonthlyBudget] = useState(1200);
   const [budgetInput, setBudgetInput] = useState("1200");
   const [spentThisMonth, setSpentThisMonth] = useState(0);
@@ -44,9 +44,9 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [incomeInput, setIncomeInput] = useState("");
   const [expenseInput, setExpenseInput] = useState("");
   const [manualSaved, setManualSaved] = useState(false);
-  const [topCategory, setTopCategory] = useState("");
+  const [topCategory, setTopCategory] = useState("Streaming");
   const [history, setHistory] = useState<string[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(defaultTransactions);
   const [manualExpenseName, setManualExpenseName] = useState("");
   const [manualExpenseCategory, setManualExpenseCategory] = useState("Handy");
   const [manualExpenseAmount, setManualExpenseAmount] = useState("");
@@ -113,9 +113,9 @@ const [savedAmount, setSavedAmount] = useState(0);
       setMonthlyIncome(data.monthlyIncome ?? 0);
       setIncomeInput(data.monthlyIncome ? String(data.monthlyIncome) : "");
       setExpenseInput(data.spentThisMonth ? String(data.spentThisMonth) : "");
-      setTopCategory(data.topCategory ?? "");
+      setTopCategory(data.topCategory ?? "Streaming");
       setHistory(data.history ?? []);
-      setTransactions(data.transactions ?? []);
+      setTransactions(data.transactions ?? defaultTransactions);
     }
   }, []);
 
@@ -586,9 +586,9 @@ setIncomeInput("");
 setSpentThisMonth(0);
 
   setSpentThisMonth(0);
-  setTopCategory("");
+  setTopCategory("Streaming");
   setHistory([]);
-  setTransactions([]);
+  setTransactions(defaultTransactions);
   setUploadedFile("");
   setUploadStatus("");
   setAnalysisResult("");
@@ -976,7 +976,7 @@ setSpentThisMonth(0);
   }
 >
       <div className="max-w-5xl mx-auto space-y-1">
-        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
 
         {activeTab === "home" && (
           <div className="space-y-6 mt-6">
@@ -1298,7 +1298,7 @@ setSpentThisMonth(0);
 
         {activeTab === "analyse" && (
           <>
-            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
           <div className="space-y-6 mt-6">
 
             {analyseSection === "menu" && (
@@ -1769,7 +1769,7 @@ setSpentThisMonth(0);
         {activeTab === "report" && (
           <div className="space-y-6 mt-6">
 
-            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
             {reportSection === "menu" && (
               <>
                 <div className="grid gap-4">
@@ -2441,10 +2441,9 @@ function Header(props: {
   savingScore: number;
   topCategory: string;
   onScoreClick?: () => void;
-  onSavingsClick?: () => void;
 }) {
   return (
-    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[36px] p-10 shadow-2xl shadow-emerald-500/10">
+    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[38px] p-10 shadow-2xl shadow-emerald-500/15">
       <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl" />
       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
 
@@ -2460,39 +2459,31 @@ function Header(props: {
         </div>
 
         <div className="mt-6 w-full max-w-3xl rounded-[34px] bg-white/75 p-5 backdrop-blur-xl shadow-2xl shadow-emerald-400/10">
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              onClick={props.onSavingsClick}
-              className="min-h-[132px] rounded-[28px] border border-emerald-200 bg-emerald-100 px-2 py-4 flex flex-col items-center justify-center text-center active:scale-[0.98] transition-all"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-400">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="min-h-[132px] rounded-[28px] border border-emerald-200 bg-emerald-100 px-2 py-4 flex flex-col items-center justify-center text-center">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-400">
                 Sparen
               </p>
               <p className="mt-4 text-2xl font-black text-black leading-none">
                 {props.monthlySavings}€
               </p>
-            </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={props.onScoreClick}
-              className="min-h-[132px] rounded-[28px] border border-cyan-200 bg-cyan-100 px-2 py-4 flex flex-col items-center justify-center text-center active:scale-[0.98] transition-all"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-cyan-400">
+            <div className="min-h-[132px] rounded-[28px] border border-cyan-200 bg-cyan-100 px-2 py-4 flex flex-col items-center justify-center text-center">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-400">
                 Score
               </p>
               <p className="mt-4 text-2xl font-black text-black leading-none">
                 {props.savingScore}/100
               </p>
-            </button>
+            </div>
 
             <div className="min-h-[132px] rounded-[28px] border border-fuchsia-200 bg-fuchsia-100 px-2 py-4 flex flex-col items-center justify-center text-center overflow-hidden">
               <p className="text-[10px] font-black uppercase tracking-[0.04em] text-fuchsia-400">
                 Kategorie
               </p>
-              <p className="mt-4 w-full text-center text-[15px] font-black text-black leading-tight whitespace-normal break-words">
-                {props.topCategory || "—"}
+              <p className="mt-3 w-full text-center text-[13px] font-black text-black leading-tight whitespace-nowrap">
+                {props.topCategory}
               </p>
             </div>
           </div>
