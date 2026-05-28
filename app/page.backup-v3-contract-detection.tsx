@@ -901,44 +901,6 @@ setSpentThisMonth(0);
       ? "Deine Fixkosten sind spürbar. Hier liegt mögliches Sparpotenzial."
       : "Deine manuellen Ausgaben wirken aktuell kontrollierbar.";
 
-  function detectSmartContract(input: string) {
-    const value = input.toLowerCase();
-
-    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney") || value.includes("prime") || value.includes("wow") || value.includes("dazn")) {
-      return { category: "Streaming", recurring: true, interval: "monatlich", hint: "Streaming-Abo erkannt" };
-    }
-
-    if (value.includes("vodafone") || value.includes("telekom") || value.includes("o2") || value.includes("1&1") || value.includes("handy")) {
-      return { category: "Handy", recurring: true, interval: "monatlich", hint: "Mobilfunkvertrag erkannt" };
-    }
-
-    if (value.includes("allianz") || value.includes("huk") || value.includes("axa") || value.includes("ergo") || value.includes("versicherung")) {
-      return { category: "Versicherung", recurring: true, interval: "monatlich", hint: "Versicherung erkannt" };
-    }
-
-    if (value.includes("strom") || value.includes("eon") || value.includes("vattenfall") || value.includes("stadtwerke")) {
-      return { category: "Strom", recurring: true, interval: "monatlich", hint: "Stromvertrag erkannt" };
-    }
-
-    if (value.includes("miete") || value.includes("abtrag") || value.includes("darlehen") || value.includes("kreditrate")) {
-      return { category: "Miete/Abtrag", recurring: true, interval: "monatlich", hint: "Wohnkosten erkannt" };
-    }
-
-    if (value.includes("tanken") || value.includes("shell") || value.includes("aral") || value.includes("esso")) {
-      return { category: "Tanken", recurring: false, interval: "einmalig", hint: "Mobilitätsausgabe erkannt" };
-    }
-
-    if (value.includes("restaurant") || value.includes("lieferando") || value.includes("mcdonald") || value.includes("burger") || value.includes("cafe")) {
-      return { category: "Restaurant", recurring: false, interval: "einmalig", hint: "Restaurant-Ausgabe erkannt" };
-    }
-
-    if (value.includes("urlaub") || value.includes("hotel") || value.includes("booking") || value.includes("airbnb")) {
-      return { category: "Urlaub", recurring: false, interval: "einmalig", hint: "Urlaubs-/Reisekosten erkannt" };
-    }
-
-    return null;
-  }
-
   function addManualExpense() {
     const cleanedAmount = manualExpenseAmount
       .trim()
@@ -954,28 +916,18 @@ setSpentThisMonth(0);
       return;
     }
 
-    const detected = detectSmartContract(manualExpenseName);
-
-    const finalCategory = detected?.category || manualExpenseCategory;
-    const finalRecurring = detected?.recurring ?? manualExpenseRecurring;
-    const finalInterval = detected?.interval || manualExpenseInterval;
-
     setManualExpenses([
       {
         id: Date.now(),
         name: manualExpenseName.trim(),
-        category: finalCategory,
+        category: manualExpenseCategory,
         amount,
-        recurring: finalRecurring,
-        interval: finalInterval,
+        recurring: manualExpenseRecurring,
+        interval: manualExpenseInterval,
         createdAt: new Date().toISOString()
       },
       ...manualExpenses
     ]);
-
-    if (detected?.hint) {
-      setUploadStatus("AI erkannt: " + detected.hint + " · Kategorie: " + finalCategory);
-    }
 
     setManualExpenseName("");
     setManualExpenseAmount("");
@@ -2331,29 +2283,10 @@ setSpentThisMonth(0);
                   <div className="grid gap-4 mt-5">
                     <input
                       value={manualExpenseName}
-                      onChange={(e) => {
-                        setManualExpenseName(e.target.value);
-                        const detected = detectSmartContract(e.target.value);
-                        if (detected) {
-                          setManualExpenseCategory(detected.category);
-                          setManualExpenseRecurring(detected.recurring);
-                          setManualExpenseInterval(detected.interval);
-                        }
-                      }}
-                      placeholder="z.B. Netflix, Vodafone, Allianz, Miete"
+                      onChange={(e) => setManualExpenseName(e.target.value)}
+                      placeholder="z.B. Handyvertrag, Versicherung, Netflix"
                       className="w-full bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
                     />
-
-                    {detectSmartContract(manualExpenseName) && (
-                      <div className="rounded-2xl bg-emerald-400/15 border border-emerald-400/30 p-4">
-                        <p className="text-black font-black">
-                          AI Erkennung
-                        </p>
-                        <p className="text-black mt-1">
-                          {detectSmartContract(manualExpenseName)?.hint} · Kategorie wird automatisch gesetzt.
-                        </p>
-                      </div>
-                    )}
 
                     <select
                       value={manualExpenseCategory}
