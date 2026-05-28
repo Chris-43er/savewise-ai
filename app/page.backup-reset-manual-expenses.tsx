@@ -67,7 +67,6 @@ const [savedAmount, setSavedAmount] = useState(0);
     if (!cleaned) {
       localStorage.removeItem("savewise_data");
       localStorage.removeItem("savewise_transactions");
-    localStorage.removeItem("savewise_manual_expenses");
       localStorage.setItem("savewise_force_clean", "true");
     }
 

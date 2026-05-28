@@ -23,7 +23,6 @@ export default function Page() {
   const [analyseSection, setAnalyseSection] = useState("menu");
   const [reportSection, setReportSection] = useState("menu");
   const [showSettings, setShowSettings] = useState(false);
-  const [showScoreInfo, setShowScoreInfo] = useState(false);
   const [showAppSplash, setShowAppSplash] = useState(true);
   const [splashProgress, setSplashProgress] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -67,7 +66,6 @@ const [savedAmount, setSavedAmount] = useState(0);
     if (!cleaned) {
       localStorage.removeItem("savewise_data");
       localStorage.removeItem("savewise_transactions");
-    localStorage.removeItem("savewise_manual_expenses");
       localStorage.setItem("savewise_force_clean", "true");
     }
 
@@ -669,11 +667,11 @@ setSpentThisMonth(0);
   ];
 
   useEffect(() => {
-    document.body.style.overflow = showSettings || showIntro || showScoreInfo ? "hidden" : "";
+    document.body.style.overflow = showSettings || showIntro ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showSettings, showIntro, showScoreInfo]);
+  }, [showSettings, showIntro]);
 
   function exportData() {
     const data = {
@@ -963,7 +961,9 @@ setSpentThisMonth(0);
 
 
 
-          
+          <p className="mt-4 text-white text-sm">
+            Lade Premium Dashboard...
+          </p>
         </div>
       )}
 
@@ -976,7 +976,7 @@ setSpentThisMonth(0);
   }
 >
       <div className="max-w-5xl mx-auto space-y-1">
-        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
 
         {activeTab === "home" && (
           <div className="space-y-6 mt-6">
@@ -1009,14 +1009,7 @@ setSpentThisMonth(0);
                 color="text-cyan-400"
                 note={aiRecommendation}
               />
-              <Card
-                isLightMode={isLightMode}
-                title="Finanzscore"
-                value={`${savingScore}/100 · ${savingsRate}%`}
-                color="text-purple-400"
-                note="Score und Sparquote kombiniert."
-                onClick={() => setShowScoreInfo(true)}
-              />
+              <Card isLightMode={isLightMode} title="Sparquote" value={transactions.length > 0 && monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
             )}
 
@@ -1298,7 +1291,7 @@ setSpentThisMonth(0);
 
         {activeTab === "analyse" && (
           <>
-            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
           <div className="space-y-6 mt-6">
 
             {analyseSection === "menu" && (
@@ -1769,7 +1762,7 @@ setSpentThisMonth(0);
         {activeTab === "report" && (
           <div className="space-y-6 mt-6">
 
-            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
             {reportSection === "menu" && (
               <>
                 <div className="grid gap-4">
@@ -2280,64 +2273,6 @@ setSpentThisMonth(0);
         </div>
       )}
 
-      {showScoreInfo && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-[99999] flex items-center justify-center p-6">
-          <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[34px] p-8 shadow-2xl text-black">
-            <h2 className="text-4xl font-black text-black">
-              Finanzscore
-            </h2>
-
-            <p className="mt-3 text-black leading-relaxed">
-              Der Finanzscore kombiniert deine finanzielle Gesamtsituation mit deiner aktuellen Sparquote.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                <p className="text-black font-black">Score</p>
-                <p className="mt-3 text-3xl font-black text-emerald-400">
-                  {savingScore}/100
-                </p>
-                <p className="mt-2 text-sm text-black">
-                  Bewertet Budget, Ausgaben, Risiken und finanzielle Stabilität.
-                </p>
-              </div>
-
-              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
-                <p className="text-black font-black">Sparquote</p>
-                <p className="mt-3 text-3xl font-black text-purple-400">
-                  {savingsRate}%
-                </p>
-                <p className="mt-2 text-sm text-black">
-                  Zeigt, wie viel Prozent deines Einkommens nach Ausgaben übrig bleibt.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
-              <p className="font-black text-black">
-                Deine aktuelle Einschätzung
-              </p>
-
-              <p className="mt-2 text-black leading-relaxed">
-                {savingsRate >= 25
-                  ? "Sehr stark: Deine Sparquote ist gesund und dein finanzieller Spielraum ist gut."
-                  : savingsRate >= 10
-                  ? "Solide: Du sparst bereits etwas, könntest aber einzelne Ausgaben weiter optimieren."
-                  : "Achtung: Deine Sparquote ist niedrig. Prüfe Fixkosten, Abos und variable Ausgaben."}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowScoreInfo(false)}
-              className="w-full mt-6 bg-black text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all"
-            >
-              Verstanden
-            </button>
-          </div>
-        </div>
-      )}
-
      {showSettings && (
   <div className="fixed inset-0 bg-black/70 backdrop-blur-xl z-50 flex items-center justify-center p-6">
     <div className="w-full max-w-lg bg-white border border-gray-200 rounded-[34px] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -2440,7 +2375,6 @@ function Header(props: {
   monthlySavings: number;
   savingScore: number;
   topCategory: string;
-  onScoreClick?: () => void;
 }) {
   return (
     <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[38px] p-10 shadow-2xl shadow-emerald-500/15">

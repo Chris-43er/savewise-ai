@@ -67,7 +67,6 @@ const [savedAmount, setSavedAmount] = useState(0);
     if (!cleaned) {
       localStorage.removeItem("savewise_data");
       localStorage.removeItem("savewise_transactions");
-    localStorage.removeItem("savewise_manual_expenses");
       localStorage.setItem("savewise_force_clean", "true");
     }
 
@@ -963,7 +962,9 @@ setSpentThisMonth(0);
 
 
 
-          
+          <p className="mt-4 text-white text-sm">
+            Lade Premium Dashboard...
+          </p>
         </div>
       )}
 
@@ -976,7 +977,7 @@ setSpentThisMonth(0);
   }
 >
       <div className="max-w-5xl mx-auto space-y-1">
-        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+        {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
 
         {activeTab === "home" && (
           <div className="space-y-6 mt-6">
@@ -1009,14 +1010,7 @@ setSpentThisMonth(0);
                 color="text-cyan-400"
                 note={aiRecommendation}
               />
-              <Card
-                isLightMode={isLightMode}
-                title="Finanzscore"
-                value={`${savingScore}/100 · ${savingsRate}%`}
-                color="text-purple-400"
-                note="Score und Sparquote kombiniert."
-                onClick={() => setShowScoreInfo(true)}
-              />
+              <Card isLightMode={isLightMode} title="Finanzscore" value={transactions.length > 0 && monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
             )}
 
@@ -1298,7 +1292,7 @@ setSpentThisMonth(0);
 
         {activeTab === "analyse" && (
           <>
-            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+            {analyseSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
           <div className="space-y-6 mt-6">
 
             {analyseSection === "menu" && (
@@ -1769,7 +1763,7 @@ setSpentThisMonth(0);
         {activeTab === "report" && (
           <div className="space-y-6 mt-6">
 
-            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} />}
+            {reportSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} />}
             {reportSection === "menu" && (
               <>
                 <div className="grid gap-4">
@@ -2440,7 +2434,6 @@ function Header(props: {
   monthlySavings: number;
   savingScore: number;
   topCategory: string;
-  onScoreClick?: () => void;
 }) {
   return (
     <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[38px] p-10 shadow-2xl shadow-emerald-500/15">
