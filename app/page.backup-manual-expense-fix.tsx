@@ -760,17 +760,9 @@ setSpentThisMonth(0);
       : "Deine manuellen Ausgaben wirken aktuell kontrollierbar.";
 
   function addManualExpense() {
-    const cleanedAmount = manualExpenseAmount
-      .trim()
-      .replace(/\s/g, "")
-      .replace(/€/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
-
-    const amount = Number(cleanedAmount);
+    const amount = Number(manualExpenseAmount.replace(",", "."));
 
     if (!manualExpenseName.trim() || !Number.isFinite(amount) || amount <= 0) {
-      alert("Bitte gib einen Namen und einen gültigen Betrag ein, z.B. 1539,46.");
       return;
     }
 
