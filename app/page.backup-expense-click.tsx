@@ -750,21 +750,6 @@ setSpentThisMonth(0);
       ? "Plane 2–3 Mahlzeiten vor, um Ausgaben zu glätten."
       : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben.";
 
-  const allExpenseItems = [
-    ...transactions
-      .filter((item) => item.amount < 0)
-      .map((item) => ({
-        name: item.name,
-        category: item.category,
-        amount: Math.abs(item.amount)
-      })),
-    ...manualExpenses.map((item) => ({
-      name: item.name,
-      category: item.category + (item.recurring ? " · monatlich" : " · einmalig"),
-      amount: item.amount
-    }))
-  ];
-
   const manualExpenseInsight =
     manualExpenses.length === 0
       ? "Noch keine eigenen Ausgaben eingetragen."
@@ -983,17 +968,7 @@ setSpentThisMonth(0);
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card isLightMode={isLightMode} title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card
-                isLightMode={isLightMode}
-                title="Ausgaben"
-                value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
-                color="text-red-400"
-                onClick={() => {
-                  setActiveTab("analyse");
-                  setAnalyseSection("transactions");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
+              <Card isLightMode={isLightMode} title="Ausgaben" value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
               <Card isLightMode={isLightMode}
                 title="Übrig"
                 value={
@@ -1736,11 +1711,7 @@ setSpentThisMonth(0);
             <div className={analyseSection === "transactions" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Letzte Transaktionen">
               <div className="space-y-4 mt-6">
-                {allExpenseItems.length === 0 && (
-                  <p className="text-white">Noch keine Ausgaben vorhanden.</p>
-                )}
-
-                {allExpenseItems.map((item, index) => (
+                {transactions.map((item, index) => (
                   <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
                     <div>
                       <p className="font-bold">{item.name}</p>
@@ -2427,25 +2398,19 @@ function Header(props: {
   );
 }
 
-function Card(props: {
-  title: string;
-  value: string;
-  color: string;
-  note?: string;
-  isLightMode?: boolean;
-  onClick?: () => void;
-}) {
+function Card(props: { title: string; value: string; color: string; note?: string; isLightMode?: boolean }) {
   const isAI = props.title === "KI Insight";
 
   return (
-    <button
-      type="button"
-      onClick={props.onClick}
+    <div
       className={
-        "relative text-left w-full overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
-        (props.onClick ? "cursor-pointer " : "") +
+        "relative overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
         (isAI
-          ? "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
+          ? props.isLightMode
+            ? "border-cyan-300 bg-cyan-100/80 shadow-cyan-200/40"
+            : "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
+          : props.isLightMode
+          ? "border-gray-200 bg-white/90 shadow-black/10"
           : "border-white/10 bg-white/5 shadow-black/30")
       }
     >
@@ -2457,7 +2422,17 @@ function Card(props: {
       )}
 
       <div className="relative">
-        <p className={isAI ? "text-sm font-bold text-cyan-300" : "text-sm font-medium text-white"}>
+        <p
+          className={
+            isAI
+              ? props.isLightMode
+                ? "text-sm font-bold text-cyan-700"
+                : "text-sm font-bold text-cyan-300"
+              : props.isLightMode
+              ? "text-sm font-semibold text-black"
+              : "text-sm font-medium text-white"
+          }
+        >
           {props.title}
         </p>
 
@@ -2466,12 +2441,18 @@ function Card(props: {
         </h2>
 
         {isAI && (
-          <p className={props.isLightMode ? "mt-3 text-xs leading-relaxed text-slate-700" : "mt-3 text-xs leading-relaxed text-cyan-100/80"}>
+          <p
+            className={
+              props.isLightMode
+                ? "mt-3 text-xs leading-relaxed text-slate-800"
+                : "mt-3 text-xs leading-relaxed text-cyan-100/80"
+            }
+          >
             {props.note || "Automatisch aus deinen aktuellen Finanzdaten erkannt."}
           </p>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

@@ -168,7 +168,7 @@ setTimeout(() => {
 
   } else if (text.includes("budget")) {
     setChatReply(
-      `Dein Monatsbudget liegt bei ${monthlyBudget.toFixed(2).replace(".", ",")}€. Davon hast du bereits ${totalMonthlyExpenses.toFixed(2).replace(".", ",")}€ genutzt. Übrig vom Ausgabenlimit sind ${(monthlyBudget - totalMonthlyExpenses).toFixed(2).replace(".", ",")}€.`
+      `Dein Monatsbudget liegt bei ${monthlyBudget.toFixed(2).replace(".", ",")}€. Davon hast du bereits ${spentThisMonth.toFixed(2).replace(".", ",")}€ genutzt. Übrig vom Ausgabenlimit sind ${(monthlyBudget - spentThisMonth).toFixed(2).replace(".", ",")}€.`
     );
 
   } else if (text.includes("sparen") || text.includes("300")) {
@@ -699,27 +699,16 @@ setSpentThisMonth(0);
     URL.revokeObjectURL(url);
   }
 
-  const manualExpenseTotal = manualExpenses.reduce((sum, item) => sum + item.amount, 0);
-  const manualRecurringTotal = manualExpenses
-    .filter((item) => item.recurring)
-    .reduce((sum, item) => sum + item.amount, 0);
-
-  const totalMonthlyExpenses = spentThisMonth + manualExpenseTotal;
-  const remainingAfterManual = monthlyIncome - totalMonthlyExpenses;
-
-  const fixedCostRatio =
-    monthlyIncome > 0 ? Math.round((manualRecurringTotal / monthlyIncome) * 100) : 0;
-
   const spendingRatio =
-    monthlyBudget > 0 ? Math.round((totalMonthlyExpenses / monthlyBudget) * 100) : 0;
+    monthlyBudget > 0 ? Math.round((spentThisMonth / monthlyBudget) * 100) : 0;
 
   const savingsRate =
-    monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) : 0;
+    monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) : 0;
 
   const aiInsight =
     transactions.length === 0
       ? "Datenbasis fehlt"
-      : totalMonthlyExpenses > monthlyBudget
+      : spentThisMonth > monthlyBudget
       ? "Budget kritisch"
       : savingsRate >= 30
       ? "Starke Sparquote"
@@ -738,7 +727,7 @@ setSpentThisMonth(0);
   const aiRecommendation =
     transactions.length === 0
       ? "Lade einen Kontoauszug hoch, damit SaveWise echte Muster erkennt."
-      : totalMonthlyExpenses > monthlyBudget
+      : spentThisMonth > monthlyBudget
       ? "Du liegst über deinem Monatsbudget. Prüfe zuerst flexible Ausgaben."
       : savingsRate >= 30
       ? "Sehr gut: Deine Sparquote ist stark. Halte diesen Kurs."
@@ -750,20 +739,16 @@ setSpentThisMonth(0);
       ? "Plane 2–3 Mahlzeiten vor, um Ausgaben zu glätten."
       : "Deine Daten zeigen Sparpotenzial bei variablen Ausgaben.";
 
-  const allExpenseItems = [
-    ...transactions
-      .filter((item) => item.amount < 0)
-      .map((item) => ({
-        name: item.name,
-        category: item.category,
-        amount: Math.abs(item.amount)
-      })),
-    ...manualExpenses.map((item) => ({
-      name: item.name,
-      category: item.category + (item.recurring ? " · monatlich" : " · einmalig"),
-      amount: item.amount
-    }))
-  ];
+  const manualExpenseTotal = manualExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const manualRecurringTotal = manualExpenses
+    .filter((item) => item.recurring)
+    .reduce((sum, item) => sum + item.amount, 0);
+
+  const totalMonthlyExpenses = spentThisMonth + manualExpenseTotal;
+  const remainingAfterManual = monthlyIncome - totalMonthlyExpenses;
+
+  const fixedCostRatio =
+    monthlyIncome > 0 ? Math.round((manualRecurringTotal / monthlyIncome) * 100) : 0;
 
   const manualExpenseInsight =
     manualExpenses.length === 0
@@ -983,17 +968,7 @@ setSpentThisMonth(0);
             {homeSection === "overview" && (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card isLightMode={isLightMode} title="Einkommen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-              <Card
-                isLightMode={isLightMode}
-                title="Ausgaben"
-                value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"}
-                color="text-red-400"
-                onClick={() => {
-                  setActiveTab("analyse");
-                  setAnalyseSection("transactions");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
+              <Card isLightMode={isLightMode} title="Ausgaben" value={totalMonthlyExpenses > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
               <Card isLightMode={isLightMode}
                 title="Übrig"
                 value={
@@ -1009,7 +984,7 @@ setSpentThisMonth(0);
                 color="text-cyan-400"
                 note={aiRecommendation}
               />
-              <Card isLightMode={isLightMode} title="Sparquote" value={transactions.length > 0 && monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) + "%" : "—"} color="text-purple-400" />
+              <Card isLightMode={isLightMode} title="Sparquote" value={transactions.length > 0 && monthlyIncome > 0 ? Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) + "%" : "—"} color="text-purple-400" />
             </div>
             )}
 
@@ -1113,8 +1088,8 @@ setSpentThisMonth(0);
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
                 <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
                   <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
-                  <Mini title="Ausgaben" value={transactions.length > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
-                  <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) + "%"} color="text-purple-400" />
+                  <Mini title="Ausgaben" value={transactions.length > 0 ? spentThisMonth.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
+                  <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / monthlyIncome) * 100)) + "%"} color="text-purple-400" />
                 </div>
 
                 <div className="mt-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-white">
@@ -1127,7 +1102,7 @@ setSpentThisMonth(0);
                   </p>
 
                   <p className="mt-2 text-white">
-                    Deine aktuelle Sparquote liegt bei {Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100))}%.
+                    Deine aktuelle Sparquote liegt bei {Math.max(0, Math.round(((monthlyIncome - spentThisMonth) / 3200) * 100))}%.
                   </p>
                 </div>
               </Panel>
@@ -1224,7 +1199,7 @@ setSpentThisMonth(0);
                 <p className="text-white mt-2">Ausgegeben: {spentThisMonth}€</p>
 
                 <p className="text-emerald-400 font-black text-3xl mt-4">
-                  Vom Ausgabenlimit übrig: {(monthlyBudget - totalMonthlyExpenses).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                  Vom Ausgabenlimit übrig: {(monthlyBudget - spentThisMonth).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                 </p>
 
                 <div className="w-full h-5 bg-gray-100 rounded-full mt-6 overflow-hidden">
@@ -1238,7 +1213,7 @@ setSpentThisMonth(0);
                           : "bg-emerald-400")
                     }
                     style={{
-                      width: Math.min(100, (totalMonthlyExpenses / monthlyBudget) * 100) + "%"
+                      width: Math.min(100, (spentThisMonth / monthlyBudget) * 100) + "%"
                     }}
                   />
                 </div>
@@ -1266,7 +1241,7 @@ setSpentThisMonth(0);
                       { name: "Jan", ausgaben: 980, sparen: 420 },
                       { name: "Feb", ausgaben: 1120, sparen: 360 },
                       { name: "Mär", ausgaben: 870, sparen: 520 },
-                      { name: "Apr", ausgaben: totalMonthlyExpenses, sparen: Math.max(0, monthlyIncome - spentThisMonth) }
+                      { name: "Apr", ausgaben: spentThisMonth, sparen: Math.max(0, monthlyIncome - spentThisMonth) }
                     ]}
                   >
                     <XAxis dataKey="name" />
@@ -1385,7 +1360,7 @@ setSpentThisMonth(0);
                   />
                 )}
 
-                {monthlyBudget > 0 && totalMonthlyExpenses > monthlyBudget * 0.9 && (
+                {monthlyBudget > 0 && spentThisMonth > monthlyBudget * 0.9 && (
                   <Info
                     color="yellow"
                     title="Budget fast erreicht"
@@ -1736,11 +1711,7 @@ setSpentThisMonth(0);
             <div className={analyseSection === "transactions" ? "block pt-28" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Letzte Transaktionen">
               <div className="space-y-4 mt-6">
-                {allExpenseItems.length === 0 && (
-                  <p className="text-white">Noch keine Ausgaben vorhanden.</p>
-                )}
-
-                {allExpenseItems.map((item, index) => (
+                {transactions.map((item, index) => (
                   <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
                     <div>
                       <p className="font-bold">{item.name}</p>
@@ -1748,7 +1719,7 @@ setSpentThisMonth(0);
                     </div>
 
                     <p className={item.amount >= 0 ? "text-emerald-400 font-black" : "text-red-400 font-black"}>
-                      {Math.abs(item.amount).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                      {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                     </p>
                   </div>
                 ))}
@@ -2042,7 +2013,7 @@ setSpentThisMonth(0);
 
                         <div className="text-right">
                           <p className="font-black text-red-400">
-                            {Math.abs(item.amount).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+                            {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                           </p>
 
                           <button
@@ -2427,25 +2398,19 @@ function Header(props: {
   );
 }
 
-function Card(props: {
-  title: string;
-  value: string;
-  color: string;
-  note?: string;
-  isLightMode?: boolean;
-  onClick?: () => void;
-}) {
+function Card(props: { title: string; value: string; color: string; note?: string; isLightMode?: boolean }) {
   const isAI = props.title === "KI Insight";
 
   return (
-    <button
-      type="button"
-      onClick={props.onClick}
+    <div
       className={
-        "relative text-left w-full overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
-        (props.onClick ? "cursor-pointer " : "") +
+        "relative overflow-hidden min-h-[118px] rounded-[30px] border p-5 backdrop-blur-2xl shadow-2xl transition-all duration-300 active:scale-[0.98] " +
         (isAI
-          ? "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
+          ? props.isLightMode
+            ? "border-cyan-300 bg-cyan-100/80 shadow-cyan-200/40"
+            : "border-cyan-400/40 bg-cyan-400/20 shadow-cyan-400/20"
+          : props.isLightMode
+          ? "border-gray-200 bg-white/90 shadow-black/10"
           : "border-white/10 bg-white/5 shadow-black/30")
       }
     >
@@ -2457,7 +2422,17 @@ function Card(props: {
       )}
 
       <div className="relative">
-        <p className={isAI ? "text-sm font-bold text-cyan-300" : "text-sm font-medium text-white"}>
+        <p
+          className={
+            isAI
+              ? props.isLightMode
+                ? "text-sm font-bold text-cyan-700"
+                : "text-sm font-bold text-cyan-300"
+              : props.isLightMode
+              ? "text-sm font-semibold text-black"
+              : "text-sm font-medium text-white"
+          }
+        >
           {props.title}
         </p>
 
@@ -2466,12 +2441,18 @@ function Card(props: {
         </h2>
 
         {isAI && (
-          <p className={props.isLightMode ? "mt-3 text-xs leading-relaxed text-slate-700" : "mt-3 text-xs leading-relaxed text-cyan-100/80"}>
+          <p
+            className={
+              props.isLightMode
+                ? "mt-3 text-xs leading-relaxed text-slate-800"
+                : "mt-3 text-xs leading-relaxed text-cyan-100/80"
+            }
+          >
             {props.note || "Automatisch aus deinen aktuellen Finanzdaten erkannt."}
           </p>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 
