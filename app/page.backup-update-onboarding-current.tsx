@@ -835,27 +835,19 @@ ${smartTip}`;
   const onboardingSlides = [
     {
       title: "Willkommen bei SaveWise AI",
-      text: "Dein persönliches Finanzdashboard mit BudgetFlow, Sparscore, Verträgen, Upload-Analyse und smarter AI-Unterstützung."
+      text: "Dein intelligentes Premium-Finanzdashboard für Budget, Sparziele und KI-gestützte Finanzanalyse."
     },
     {
-      title: "BudgetFlow verstehen",
-      text: "Auf der Startseite siehst du sofort Einkommen, Ausgaben und verfügbares Geld als klare Balken. Tippe auf die Bereiche, um direkt zu den passenden Details zu springen."
+      title: "Behalte alles im Blick",
+      text: "Analysiere Einnahmen, Ausgaben, Sparquote, Monatsbudget und Finanztrend in einer modernen App-Ansicht."
     },
     {
-      title: "Daten erfassen",
-      text: "Lade Kontoauszüge als PDF oder CSV hoch oder trage Einkommen, Ausgaben und Verträge manuell ein. Änderungen werden automatisch in deiner Übersicht berücksichtigt."
+      title: "Setze smarte Sparziele",
+      text: "Lege Ziele fest, verfolge deinen Fortschritt und erkenne sofort, wie viel dir noch fehlt."
     },
     {
-      title: "Verträge & Fixkosten prüfen",
-      text: "SaveWise zeigt dir wiederkehrende Kosten, Fixkostenquote, Jahresbelastung und erkannte Verträge übersichtlich im App-Design."
-    },
-    {
-      title: "Ziele, Trends und Reports",
-      text: "Nutze Monatsvergleich, Sparziel, Finanztrend und PDF-Export, um deine Entwicklung zu verfolgen und Ergebnisse zu sichern."
-    },
-    {
-      title: "SaveWise AI nutzen",
-      text: "Über ✨ in der unteren Navigation kannst du Fragen zu deinen Finanzen stellen. Die AI nutzt deine lokalen Finanzwerte für Einschätzungen und Spartipps."
+      title: "KI unterstützt dich",
+      text: "SaveWise AI gibt dir Spartipps, erkennt Risiken und hilft dir, bessere finanzielle Entscheidungen zu treffen."
     }
   ];
 

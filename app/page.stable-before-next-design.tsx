@@ -47,14 +47,6 @@ const [isLightMode, setIsLightMode] = useState(false);
   const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [incomeInput, setIncomeInput] = useState("");
   const [expenseInput, setExpenseInput] = useState("");
-
-  useEffect(() => {
-    const income = Number(incomeInput);
-    const expenses = Number(expenseInput);
-
-    setMonthlyIncome(!isNaN(income) && income > 0 ? income : 0);
-    setSpentThisMonth(!isNaN(expenses) && expenses > 0 ? expenses : 0);
-  }, [incomeInput, expenseInput]);
   const [manualSaved, setManualSaved] = useState(false);
   const [topCategory, setTopCategory] = useState("");
   const [history, setHistory] = useState<string[]>([]);
@@ -835,27 +827,19 @@ ${smartTip}`;
   const onboardingSlides = [
     {
       title: "Willkommen bei SaveWise AI",
-      text: "Dein persönliches Finanzdashboard mit BudgetFlow, Sparscore, Verträgen, Upload-Analyse und smarter AI-Unterstützung."
+      text: "Dein intelligentes Premium-Finanzdashboard für Budget, Sparziele und KI-gestützte Finanzanalyse."
     },
     {
-      title: "BudgetFlow verstehen",
-      text: "Auf der Startseite siehst du sofort Einkommen, Ausgaben und verfügbares Geld als klare Balken. Tippe auf die Bereiche, um direkt zu den passenden Details zu springen."
+      title: "Behalte alles im Blick",
+      text: "Analysiere Einnahmen, Ausgaben, Sparquote, Monatsbudget und Finanztrend in einer modernen App-Ansicht."
     },
     {
-      title: "Daten erfassen",
-      text: "Lade Kontoauszüge als PDF oder CSV hoch oder trage Einkommen, Ausgaben und Verträge manuell ein. Änderungen werden automatisch in deiner Übersicht berücksichtigt."
+      title: "Setze smarte Sparziele",
+      text: "Lege Ziele fest, verfolge deinen Fortschritt und erkenne sofort, wie viel dir noch fehlt."
     },
     {
-      title: "Verträge & Fixkosten prüfen",
-      text: "SaveWise zeigt dir wiederkehrende Kosten, Fixkostenquote, Jahresbelastung und erkannte Verträge übersichtlich im App-Design."
-    },
-    {
-      title: "Ziele, Trends und Reports",
-      text: "Nutze Monatsvergleich, Sparziel, Finanztrend und PDF-Export, um deine Entwicklung zu verfolgen und Ergebnisse zu sichern."
-    },
-    {
-      title: "SaveWise AI nutzen",
-      text: "Über ✨ in der unteren Navigation kannst du Fragen zu deinen Finanzen stellen. Die AI nutzt deine lokalen Finanzwerte für Einschätzungen und Spartipps."
+      title: "KI unterstützt dich",
+      text: "SaveWise AI gibt dir Spartipps, erkennt Risiken und hilft dir, bessere finanzielle Entscheidungen zu treffen."
     }
   ];
 
@@ -1304,33 +1288,6 @@ ${smartTip}`;
           color: #06b6d4 !important;
         }
       `}</style>
-      
-      <style jsx global>{`
-        html,
-        body {
-          background: #050816 !important;
-          overscroll-behavior: none;
-        }
-
-        body {
-          min-height: 100svh;
-        }
-
-        main {
-          background: #050816 !important;
-        }
-      `}</style>
-
-      <style jsx global>{`
-        html, body {
-          background: #050816 !important;
-          overscroll-behavior: none;
-        }
-        main {
-          background: #050816 !important;
-        }
-      `}</style>
-
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
           <div className="relative w-44 h-44 flex items-center justify-center">
@@ -1356,7 +1313,7 @@ ${smartTip}`;
             />
           </div>
 
-          <h1 className="mt-2 text-2xl font-black text-white tracking-wide">
+          <h1 className="mt-8 text-4xl font-black text-white tracking-wide">
             SaveWise
           </h1>
 
@@ -1372,7 +1329,7 @@ ${smartTip}`;
 
       <main
   className={
-    "min-h-0 p-6 pb-4 " +
+    "min-h-screen p-6 pb-32 " +
     (isLightMode
       ? "savewise-light-fix bg-gray-100 text-black"
       : "bg-[#050816] text-white")
@@ -1381,34 +1338,21 @@ ${smartTip}`;
       <div className="max-w-5xl mx-auto space-y-1">
         {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
 
-        {activeTab === "home" && homeSection !== "overview" && (
-          <button
-            type="button"
-            onClick={() => {
-              setHomeSection("overview");
-              window.scrollTo({ top: 0, behavior: "auto" });
-            }}
-            className="mb-12 ml-2 inline-flex h-14 px-6 rounded-[24px] bg-[#1f1d24]/95 text-white font-black shadow-2xl backdrop-blur-xl items-center justify-center whitespace-nowrap active:scale-[0.98] transition-all"
-          >
-            ← Zurück
-          </button>
-        )}
-
         {activeTab === "home" && (
-          <div className="space-y-1 mt-2">
+          <div className="space-y-6 mt-6">
             {homeSection === "aihub" && (
-              <div className="space-y-1 pt-4">
+              <div className="space-y-6 pt-4">
 
                 <Panel isLightMode={isLightMode} title="Analyse & AI">
 
-                  <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="grid grid-cols-2 gap-4 mt-6">
 
                     <div className="rounded-3xl bg-cyan-400/10 border border-cyan-400/20 p-5">
                       <p className="text-cyan-300 text-sm font-black uppercase tracking-wider">
                         Sparquote
                       </p>
 
-                      <h2 className="text-2xl font-black text-white mt-3">
+                      <h2 className="text-4xl font-black text-white mt-3">
                         {savingsRate}%
                       </h2>
                     </div>
@@ -1418,27 +1362,27 @@ ${smartTip}`;
                         Finanzscore
                       </p>
 
-                      <h2 className="text-2xl font-black text-white mt-3">
+                      <h2 className="text-4xl font-black text-white mt-3">
                         {savingScore}/100
                       </h2>
                     </div>
 
                   </div>
 
-                  <div className="mt-2 rounded-3xl bg-white/5 border border-white/10 p-6">
+                  <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-6">
 
                     <p className="text-white text-xl font-black">
                       AI Einschätzung
                     </p>
 
-                    <p className="text-white/80 mt-3 leading-relaxed">
+                    <p className="text-white/80 mt-4 leading-relaxed">
                       {aiRecommendations?.[0] || aiInsight}
                     </p>
 
                   </div>
 
-                  {false && aiWarnings.length > 0 && (
-                    <div className="mt-3 rounded-3xl bg-red-400/10 border border-red-400/20 p-6">
+                  {aiWarnings.length > 0 && (
+                    <div className="mt-5 rounded-3xl bg-red-400/10 border border-red-400/20 p-6">
 
                       <p className="text-red-300 font-black">
                         Wichtigster Hinweis
@@ -1457,12 +1401,12 @@ ${smartTip}`;
             )}
 
 
-            {false && homeSection === "contracts" && (
-              <div className="space-y-1 pt-4">
+            {homeSection === "contracts" && (
+              <div className="space-y-6 pt-4">
 
                 <Panel isLightMode={isLightMode} title="Verträge & Budget">
 
-                  <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div className="grid grid-cols-2 gap-4 mt-6">
 
                     <div className="rounded-3xl bg-fuchsia-400/10 border border-fuchsia-400/20 p-5">
                       <p className="text-fuchsia-300 text-sm font-black uppercase tracking-wider">
@@ -1492,13 +1436,13 @@ ${smartTip}`;
 
                   </div>
 
-                  <div className="mt-2 rounded-3xl bg-white/5 border border-white/10 p-6">
+                  <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-6">
 
                     <p className="text-white text-xl font-black">
                       Verträge & Abos
                     </p>
 
-                    <p className="text-white/70 mt-3 leading-relaxed">
+                    <p className="text-white/70 mt-4 leading-relaxed">
                       SaveWise erkennt automatisch wiederkehrende Kosten,
                       Abos und Verträge aus deinen Finanzdaten.
                     </p>
@@ -1511,10 +1455,10 @@ ${smartTip}`;
             )}
 
 
-            {activeTab === "home" && homeSection === "overview" && (
+            {homeSection === "overview" && (
               <div className="space-y-4 mb-6">
 
-                <div className="hidden">
+                <div className="rounded-[34px] bg-gradient-to-br from-emerald-400/20 to-cyan-400/20 border border-white/10 p-6 backdrop-blur-xl shadow-2xl">
 
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -1532,13 +1476,13 @@ ${smartTip}`;
                     </div>
                   </div>
 
-                  <p className="text-white/80 mt-3 leading-relaxed">
+                  <p className="text-white/80 mt-5 leading-relaxed">
                     {aiRecommendations?.[0] || "Deine Finanzstruktur wirkt aktuell stabil."}
                   </p>
 
                 </div>
 
-                {false && aiWarnings.length > 0 && (
+                {aiWarnings.length > 0 && (
                   <div className="rounded-[30px] bg-red-400/10 border border-red-400/20 p-5">
 
                     <p className="text-red-400 font-black">
@@ -1564,7 +1508,7 @@ ${smartTip}`;
                 Stelle Fragen zu deinen echten Finanzdaten.
               </p>
 
-              <div className="grid grid-cols-2 gap-1 mt-3">
+              <div className="grid grid-cols-2 gap-3 mt-5">
                 <button
                   type="button"
                   onClick={() => askQuickAI("Wo kann ich sparen?")}
@@ -1598,7 +1542,7 @@ ${smartTip}`;
                 </button>
               </div>
 
-              <div className="flex gap-1 mt-3 items-center">
+              <div className="flex gap-3 mt-4">
                 <input
                   value={chatMessage}
                   onChange={(e) => setChatMessage(e.target.value)}
@@ -1609,13 +1553,13 @@ ${smartTip}`;
                 <button
                   type="button"
                   onClick={askAI}
-                  className="fixed top-[104px] left-5 z-[9999] h-14 px-6 rounded-[24px] bg-[#1f1d24]/95 text-white font-black shadow-2xl backdrop-blur-xl flex items-center justify-center whitespace-nowrap active:scale-[0.98] transition-all"
+                  className="bg-emerald-400 text-black rounded-2xl px-5 font-black"
                 >
                   Fragen
                 </button>
               </div>
 
-              <div className="mt-3 rounded-2xl bg-black/20 border border-white/10 p-4">
+              <div className="mt-4 rounded-2xl bg-black/20 border border-white/10 p-4">
                 <p className="text-emerald-300 text-xs font-black uppercase tracking-[0.18em]">
                   Antwort
                 </p>
@@ -1626,204 +1570,11 @@ ${smartTip}`;
               </div>
             </div>
 
-            <div className={activeTab === "home" && homeSection === "overview" ? "relative -mx-6 -mt-14 rounded-[24px] border border-emerald-400/5 bg-white/[0.012] p-1 shadow-[0_0_8px_rgba(16,185,129,0.03)]" : "hidden"}>
-              <div className="absolute -inset-1 rounded-[30px] bg-emerald-400/[0.03] blur-md pointer-events-none" />
-              <div className="rounded-[22px] border border-emerald-400/5 bg-white/[0.012] p-1 shadow-none backdrop-blur-xl">
+            <div className="relative rounded-[42px] border border-emerald-400/20 bg-gradient-to-br from-emerald-400/10 via-cyan-400/5 to-transparent p-4 shadow-[0_0_55px_rgba(16,185,129,0.16)]">
+              <div className="absolute -inset-1 rounded-[46px] bg-emerald-400/10 blur-2xl pointer-events-none" />
+              <div className="rounded-[46px] border border-emerald-400/20 bg-white/[0.03] p-6 shadow-[0_0_55px_rgba(16,185,129,0.18)] backdrop-blur-xl">
 
-              <div className="mb-3 rounded-[20px] border border-white/10 bg-white/[0.03] p-3 shadow-lg backdrop-blur-xl overflow-hidden">
-                <div className="flex items-center justify-center">
-                  <div>
-                    <div className="flex items-center justify-center gap-1 w-full">
-                      <img
-                        src="/savewise-icon.png"
-                        alt="SaveWise"
-                        className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-emerald-400/10"
-                      />
-
-                      <h2 className="text-[30px] font-black tracking-[0.12em] uppercase text-white">
-                        BudgetFlow
-                      </h2>
-                    </div>
-                  </div>
-
-                  <div className="hidden">
-                    📊
-                  </div>
-                </div>
-
-                <div className="mt-3 rounded-[18px] bg-white/[0.04] border border-white/10 p-2 space-y-1">
-                  {(() => {
-                    const income = monthlyIncome || 0;
-                    const expenses = totalMonthlyExpenses || 0;
-                    const available = income > 0 ? remainingAfterManual : 0;
-                    const maxValue = Math.max(income, expenses, available, 1);
-                    const availableRate = income > 0 ? Math.max(0, Math.round((available / income) * 100)) : 0;
-                    const expenseRate = income > 0 ? Math.max(0, Math.round((expenses / income) * 100)) : 0;
-
-                    const rows = [
-                      {
-                        label: "Einkommen",
-                        value: income,
-                        percent: income > 0 ? 100 : 0,
-                        color: "bg-emerald-400",
-                        text: "text-emerald-400",
-                        hint: "Bearbeiten →",
-                        onClick: () => {
-                          setActiveTab("finance");
-                          setFinanceSection("manual");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }
-                      },
-                      {
-                        label: "Ausgaben",
-                        value: expenses,
-                        percent: income > 0 ? expenseRate : Math.round((expenses / maxValue) * 100),
-                        color: "bg-red-400",
-                        text: "text-red-400",
-                        hint: "Details →",
-                        onClick: () => {
-                          setActiveTab("finance");
-                          setFinanceSection("transactions");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }
-                      },
-                      {
-                        label: "Verfügbar",
-                        value: available,
-                        percent: income > 0 ? availableRate : Math.round((available / maxValue) * 100),
-                        color: "bg-yellow-400",
-                        text: "text-yellow-400",
-                        hint: "Analyse →",
-                        onClick: () => {
-                          setHomeSection("monthly");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }
-                      }
-                    ];
-
-                    const insight =
-                      income <= 0
-                        ? "Trage dein Einkommen ein, damit SaveWise deine Lage bewerten kann."
-                        : availableRate >= 50
-                          ? `${availableRate}% deines Einkommens bleiben verfügbar. Sehr stark.`
-                          : availableRate >= 20
-                            ? `${availableRate}% bleiben verfügbar. Das ist solide.`
-                            : `Nur ${availableRate}% bleiben verfügbar. Prüfe variable Ausgaben und Fixkosten.`;
-
-                    return (
-                      <>
-                        {rows.map((row) => (
-                          <button
-                            key={row.label}
-                            type="button"
-                            onClick={row.onClick}
-                            className="w-full rounded-[15px] bg-white/[0.028] border border-white/10 px-3 py-1.5 text-left active:scale-[0.985] transition-all"
-                          >
-                            <div className="flex items-center justify-between gap-1">
-                              <div>
-                                <p className="text-white/45 text-xs uppercase tracking-[0.18em] font-black">
-                                  {row.label}
-                                </p>
-                                <p className="text-white/35 text-xs mt-1">
-                                  {row.hint}
-                                </p>
-                              </div>
-
-                              <div className="text-right">
-                                <p className={`${row.text} text-xl font-black`}>
-                                  {row.value > 0
-                                    ? row.value.toLocaleString("de-DE", { maximumFractionDigits: 0 }) + "€"
-                                    : "—"}
-                                </p>
-                                <p className="text-white/35 text-xs font-bold">
-                                  {row.percent}% →
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="mt-1.5 h-3 rounded-full bg-white/10 overflow-hidden">
-                              <div
-                                className={`${row.color} h-full rounded-full transition-all duration-700`}
-                                style={{ width: `${Math.max(6, Math.min(100, row.percent))}%` }}
-                              />
-                            </div>
-                          </button>
-                        ))}
-
-                        <div className="rounded-[14px] bg-emerald-400/10 border border-emerald-400/20 px-3 py-1.5">
-                          <p className="text-[9px] uppercase tracking-[0.16em] text-emerald-300 font-black">
-                            BudgetFlow Insight
-                          </p>
-                          <p className="text-white/70 mt-1 leading-snug text-xs">
-                            {insight}
-                          </p>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-
-                <div className="hidden">
-                  {(() => {
-                    const grouped = allExpenseItems.reduce((acc: Record<string, number>, item) => {
-                      const key = item.category || "Sonstiges";
-                      acc[key] = (acc[key] || 0) + Math.abs(item.amount || 0);
-                      return acc;
-                    }, {});
-
-                    const rows = Object.entries(grouped)
-                      .sort((a, b) => b[1] - a[1])
-                      .slice(0, 5);
-
-                    const max = Math.max(...rows.map(([, value]) => value), 1);
-
-                    if (rows.length === 0) {
-                      return (
-                        <div className="rounded-[28px] bg-white/[0.04] border border-white/10 p-5 text-white/60">
-                          Noch keine Ausgaben vorhanden. Lade Daten hoch oder trage Ausgaben ein.
-                        </div>
-                      );
-                    }
-
-                    return rows.map(([category, value]) => (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("finance");
-                          setFinanceSection("transactions");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                        className="w-full rounded-[24px] bg-white/[0.045] border border-white/10 p-4 text-left active:scale-[0.98] transition-all"
-                      >
-                        <div className="flex items-center justify-between gap-1">
-                          <div>
-                            <p className="text-white font-black">
-                              {category}
-                            </p>
-                            <p className="text-white/40 text-xs mt-1">
-                              Monatliche Ausgaben
-                            </p>
-                          </div>
-
-                          <p className="text-white font-black">
-                            {value.toLocaleString("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}€
-                          </p>
-                        </div>
-
-                        <div className="mt-3 h-3 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-emerald-400"
-                            style={{ width: `${Math.max(8, Math.round((value / max) * 100))}%` }}
-                          />
-                        </div>
-                      </button>
-                    ));
-                  })()}
-                </div>
-              </div>
-
-              <div className="hidden">
+              <div className="flex items-center justify-between gap-6">
 
                 <button
                   type="button"
@@ -1832,7 +1583,7 @@ ${smartTip}`;
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                   className="relative w-44 h-44 shrink-0 rounded-full border-[14px] border-emerald-400/35 shadow-[0_0_55px_rgba(16,185,129,0.42)] flex items-center justify-center active:scale-95 transition-all"
-                  aria-label="Analyse →"
+                  aria-label="Monatsvergleich öffnen"
                 >
 
                   <div className="absolute inset-2 rounded-full border-[10px] border-cyan-400/20" />
@@ -1843,7 +1594,7 @@ ${smartTip}`;
                       Übrig
                     </p>
 
-                    <p className="text-xl font-black text-yellow-400 mt-2">
+                    <p className="text-2xl font-black text-yellow-400 mt-2">
                       {monthlyIncome > 0
                         ? remainingAfterManual.toLocaleString("de-DE", {
                             minimumFractionDigits: 0,
@@ -1906,7 +1657,7 @@ ${smartTip}`;
 
               </div>
 
-              <div className="hidden">
+              <div className="grid grid-cols-2 gap-4 mt-6">
 
                 <Card
                   isLightMode={isLightMode}
@@ -1932,22 +1683,22 @@ ${smartTip}`;
 
 
             {false && (
-              <div className="space-y-1 pt-2">
+              <div className="space-y-5">
 
                 <button
                   type="button"
                   onClick={() => setHomeSection("overview")}
                   className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
                 >
-                  ← Zurück
+                  ← Zurück zur Übersicht
                 </button>
 
                 <Panel isLightMode={isLightMode} title="AI Insights">
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Finanzstatus
                       </p>
 
@@ -1956,8 +1707,8 @@ ${smartTip}`;
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Budgetstatus
                       </p>
 
@@ -1966,8 +1717,8 @@ ${smartTip}`;
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Monatsprognose
                       </p>
 
@@ -1981,13 +1732,13 @@ ${smartTip}`;
 
                   </div>
 
-                  <div className="mt-2 rounded-3xl bg-red-400/10 border border-red-400/20 p-5">
+                  <div className="mt-6 rounded-3xl bg-red-400/10 border border-red-400/20 p-5">
 
                     <p className="font-black text-red-400">
                       AI Warnungen
                     </p>
 
-                    <div className="space-y-1 mt-3">
+                    <div className="space-y-3 mt-4">
 
                       {aiWarnings.length === 0 && (
                         <p className="text-white">
@@ -2008,13 +1759,13 @@ ${smartTip}`;
 
                   </div>
 
-                  <div className="mt-2 rounded-3xl bg-emerald-400/10 border border-emerald-400/20 p-5">
+                  <div className="mt-6 rounded-3xl bg-emerald-400/10 border border-emerald-400/20 p-5">
 
                     <p className="font-black text-emerald-400">
                       AI Empfehlungen
                     </p>
 
-                    <div className="space-y-1 mt-3">
+                    <div className="space-y-3 mt-4">
 
                       {aiRecommendations.length === 0 && (
                         <p className="text-white">
@@ -2042,43 +1793,51 @@ ${smartTip}`;
 
 
             {homeSection === "contracts" && (
-              <div className="space-y-1 pt-20 pb-32">
-<Panel isLightMode={isLightMode} title="Verträge & Fixkosten">
-                  <p className="text-white mt-0">
+              <div className="space-y-5">
+                <button
+                  type="button"
+                  onClick={() => setHomeSection("overview")}
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                >
+                  ← Zurück zur Übersicht
+                </button>
+
+                <Panel isLightMode={isLightMode} title="Verträge & Fixkosten">
+                  <p className="text-white mt-4">
                     Hier siehst du deine wiederkehrenden Kosten, Verträge und monatlichen Belastungen.
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 px-5 py-4">
-                      <p className="text-white font-black">Monatliche Fixkosten</p>
-                      <p className="text-xs font-black text-red-400 mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">Monatliche Fixkosten</p>
+                      <p className="text-3xl font-black text-red-400 mt-3">
                         {contractMonthlyTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">Jahresbelastung</p>
-                      <p className="text-xs font-black text-yellow-400 mt-0">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">Jahresbelastung</p>
+                      <p className="text-3xl font-black text-yellow-400 mt-3">
                         {contractAnnualTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">Fixkostenquote</p>
-                      <p className="text-xs font-black text-cyan-400 mt-0">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">Fixkostenquote</p>
+                      <p className="text-3xl font-black text-cyan-400 mt-3">
                         {contractRatio}%
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-2 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
-                    <p className="font-black text-white">AI Bewertung</p>
-                    <p className="text-white/75 mt-0 leading-relaxed">
+                  <div className="mt-6 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
+                    <p className="font-black text-black">AI Bewertung</p>
+                    <p className="text-black mt-2 leading-relaxed">
                       {contractInsight}
                     </p>
                   </div>
 
-                  <div className="space-y-1 mt-2">
+                  <div className="space-y-3 mt-6">
                     {contractExpenses.length === 0 && (
                       <p className="text-white">
                         Noch keine Fixkosten oder Verträge vorhanden. Füge sie unter Report → Ausgaben & Verträge hinzu.
@@ -2086,11 +1845,11 @@ ${smartTip}`;
                     )}
 
                     {contractExpenses.map((item) => (
-                      <div key={item.id} className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
+                      <div key={item.id} className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="font-black text-black">{item.name}</p>
-                            <p className="text-xs text-black mt-0">
+                            <p className="text-sm text-black mt-1">
                               {item.category} · {item.interval || "monatlich"}
                             </p>
                           </div>
@@ -2099,7 +1858,7 @@ ${smartTip}`;
                             <p className="font-black text-red-400">
                               {item.amount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                             </p>
-                            <p className="text-xs text-black mt-0">
+                            <p className="text-xs text-black mt-1">
                               {item.interval === "jährlich"
                                 ? "≈ " + (item.amount / 12).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€ / Monat"
                                 : item.interval === "vierteljährlich"
@@ -2110,16 +1869,16 @@ ${smartTip}`;
                         </div>
 
                         {item.aiDetected && !item.confirmed && (
-                          <div className="mt-0 rounded-2xl bg-yellow-400/15 border border-yellow-400/30 p-4">
+                          <div className="mt-4 rounded-2xl bg-yellow-400/15 border border-yellow-400/30 p-4">
                             <p className="font-black text-black">AI Erkennung</p>
-                            <p className="text-black mt-0">
+                            <p className="text-black mt-1">
                               {item.aiHint || "AI hat diesen Vertrag automatisch erkannt."}
                             </p>
 
                             <button
                               type="button"
                               onClick={() => confirmExpense(item.id)}
-                              className="mt-0 bg-emerald-400 text-black px-5 py-3 rounded-2xl font-black"
+                              className="mt-4 bg-emerald-400 text-black px-5 py-3 rounded-2xl font-black"
                             >
                               AI-Erkennung bestätigen
                             </button>
@@ -2129,7 +1888,7 @@ ${smartTip}`;
                         <button
                           type="button"
                           onClick={() => deleteManualExpense(item.id)}
-                          className="w-full min-h-[50px] rounded-[16px] border border-white/10 bg-white/[0.025] px-4 py-2 text-left backdrop-blur-xl shadow-sm shadow-black/10 active:scale-[0.98] transition-all"
+                          className="w-full mt-4 bg-red-400 text-white rounded-2xl py-3 font-black"
                         >
                           Löschen
                         </button>
@@ -2141,28 +1900,28 @@ ${smartTip}`;
             )}
 
             {homeSection === "overview" && (
-<div id="home-menu" className="grid gap-2 -mt-2 pb-4">
+<div id="home-menu" className="grid gap-4">
   {[
     {
       key: "compare",
       label: "Monatsvergleich",
-      text: "Einnahmen · Ausgaben · Sparquote"
+      text: "Vergleiche Einnahmen, Ausgaben und Sparquote"
     },
     {
       key: "goal",
       label: "Sparziel",
-      text: "Ziel & Fortschritt"
+      text: "Verfolge dein aktuelles Sparziel"
     },
 
     {
       key: "contracts",
       label: "Verträge & Fixkosten",
-      text: "Fixkosten & Abos prüfen"
+      text: "Prüfe wiederkehrende Kosten, Verträge und Abos"
     },
     {
       key: "trend",
       label: "Finanztrend",
-      text: "Entwicklung anzeigen"
+      text: "Analysiere deine finanzielle Entwicklung"
     }
   ].map((item) => (
     <button
@@ -2178,19 +1937,19 @@ ${smartTip}`;
                     }, 50);
                   }}
       className={
-        "relative overflow-hidden rounded-[24px] border p-4 text-left transition-all duration-300 active:scale-[0.98] shadow-xl " +
+        "relative overflow-hidden rounded-[28px] border p-4 text-left transition-all duration-300 active:scale-[0.98] shadow-xl " +
         (homeSection === item.key
-          ? "bg-emerald-400 text-black border-emerald-300 shadow-xl shadow-emerald-400/25"
+          ? "bg-emerald-400 text-black border-emerald-300 shadow-2xl shadow-emerald-400/25"
           : isLightMode ? "bg-white/80 text-black border-gray-200 shadow-black/10" : "bg-white/5 text-white border-white/10 shadow-black/20")
       }
     >
       <p
         className={
           homeSection === item.key
-            ? "text-xs font-black text-black"
+            ? "text-xl font-black text-black"
             : isLightMode
-            ? "text-xs font-black text-black"
-            : isLightMode ? "text-xs font-black text-black" : "text-xs font-black text-white"
+            ? "text-xl font-black text-black"
+            : isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"
         }
       >
         {item.label}
@@ -2198,8 +1957,8 @@ ${smartTip}`;
 
       <p className={
         homeSection === item.key
-          ? "mt-0 text-white"
-          : isLightMode ? "mt-0 text-black" : "mt-0 text-gray-300"
+          ? "mt-2 text-white"
+          : isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"
       }>
         {item.text}
       </p>
@@ -2210,20 +1969,36 @@ ${smartTip}`;
 
             {homeSection !== "overview" && (
               <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHomeSection("overview");
+                    setTimeout(() => {
+                      const menu = document.getElementById("home-menu");
+                      if (menu) {
+                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
+                        window.scrollTo({ top: y, behavior: "auto" });
+                      }
+                    }, 50);
+                  }}
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                >
+                  <span className="text-white"><span className="text-white">← Zurück zur Übersicht</span></span>
+                </button>
               </div>
             )}
 
-            <div className={homeSection === "overview" ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 pt-24"}>
+            <div className={homeSection === "overview" ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 gap-4 pt-28"}>
 
               <div className={homeSection === "compare" ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsvergleich">
-                <div className="grid grid-cols-3 gap-1 mt-3 text-sm">
+                <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
                   <Mini title="Einnahmen" value={monthlyIncome > 0 ? monthlyIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-emerald-400" />
                   <Mini title="Ausgaben" value={transactions.length > 0 ? totalMonthlyExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€" : "—"} color="text-red-400" />
                   <Mini title="Sparquote" value={Math.max(0, Math.round(((monthlyIncome - totalMonthlyExpenses) / monthlyIncome) * 100)) + "%"} color="text-purple-400" />
                 </div>
 
-                <div className="mt-2 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-white">
+                <div className="mt-6 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-[28px] p-6 text-white">
                   <p className="font-black text-xl">
                     {spentThisMonth < 1200
                       ? "Sehr guter Monat"
@@ -2241,7 +2016,7 @@ ${smartTip}`;
 
 <div className={homeSection === "goal" ? "block" : "hidden"}>
 <Panel isLightMode={isLightMode} title="Sparziel">
-  <div className="grid gap-1 mt-2">
+  <div className="grid gap-5 mt-6">
     <div>
       <p className="text-sm font-bold text-gray-300 mb-2">Zielname</p>
       <input
@@ -2281,15 +2056,15 @@ ${smartTip}`;
     </div>
   </div>
 
-  <p className="text-gray-600 mt-3">
+  <p className="text-gray-600 mt-4">
     Fortschritt: {savedAmount}€ von {goalAmount}€
   </p>
 
-  <p className="text-emerald-400 font-black text-3xl mt-3">
+  <p className="text-emerald-400 font-black text-3xl mt-4">
     Noch nötig: {Math.max(0, goalAmount - savedAmount)}€
   </p>
 
-  <div className="w-full h-5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+  <div className="w-full h-5 bg-gray-100 rounded-full mt-6 overflow-hidden">
     <div
       className="h-full bg-cyan-400 rounded-full"
       style={{
@@ -2304,7 +2079,7 @@ ${smartTip}`;
 </div>
               <div className={false ? "block" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Monatsbudget">
-                <div className="flex gap-1 mt-2">
+                <div className="flex gap-3 mt-6">
                   <input
                     value={budgetInput}
                     onChange={(e) => setBudgetInput(e.target.value)}
@@ -2326,14 +2101,14 @@ ${smartTip}`;
                   </button>
                 </div>
 
-                <p className="text-white mt-2">Ausgabenlimit: {monthlyBudget}€</p>
+                <p className="text-white mt-6">Ausgabenlimit: {monthlyBudget}€</p>
                 <p className="text-white mt-2">Ausgegeben: {spentThisMonth}€</p>
 
-                <p className="text-emerald-400 font-black text-3xl mt-3">
+                <p className="text-emerald-400 font-black text-3xl mt-4">
                   Vom Ausgabenlimit übrig: {(monthlyBudget - totalMonthlyExpenses).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                 </p>
 
-                <div className="w-full h-5 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-5 bg-gray-100 rounded-full mt-6 overflow-hidden">
                   <div
                     className={
                       "h-full rounded-full " +
@@ -2365,7 +2140,7 @@ ${smartTip}`;
             
             <div className={homeSection === "trend" ? "block" : "hidden"}>
             <Panel isLightMode={isLightMode} title="Finanztrend">
-              <div className="h-72 mt-2">
+              <div className="h-72 mt-6">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={[
@@ -2383,7 +2158,7 @@ ${smartTip}`;
                 </ResponsiveContainer>
               </div>
 
-              <p className="text-gray-600 mt-3">
+              <p className="text-gray-600 mt-4">
                 Deine aktuelle Finanzentwicklung wird automatisch mit deinem Monatsbudget verglichen.
               </p>
             </Panel>
@@ -2396,7 +2171,7 @@ ${smartTip}`;
         )}
 
         {activeTab === "finance" && (
-          <div className="space-y-1 mt-2">
+          <div className="space-y-6 mt-6">
 
             {financeSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
             {financeSection === "menu" && (
@@ -2419,7 +2194,7 @@ ${smartTip}`;
                       SaveWise AI
                     </p>
 
-                    <h2 className="text-xl font-black text-white mt-2">
+                    <h2 className="text-2xl font-black text-white mt-2">
                       {aiFinanceStatus || aiInsight || 'Finanzlage stabil'}
                     </h2>
                   </div>
@@ -2431,12 +2206,12 @@ ${smartTip}`;
                 </div>
 
                 {smartNotifications.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1">
+                  <div className="mt-4 flex flex-wrap gap-2">
 
                     {smartNotifications.map((note, idx) => (
                       <div
                         key={idx}
-                        className="px-3 py-1.5 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/70"
+                        className="px-3 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs text-white/70"
                       >
                         {note}
                       </div>
@@ -2489,7 +2264,7 @@ ${smartTip}`;
               </>
             )}
 
-            {financeSection !== "menu" && (<div className="pt-24">
+            {financeSection !== "menu" && (
               <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
                 <button
                   type="button"
@@ -2499,25 +2274,24 @@ ${smartTip}`;
                   }}
                   className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
                 >
-                  <span className="text-white">← Zurück</span>
+                  <span className="text-white">← Zurück</span> zum Report
                 </button>
               </div>
-            </div>
             )}
 
 
-            <div className={financeSection === "transactions" ? "block pt-6" : "hidden"}>
+            <div className={financeSection === "transactions" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Alle Ausgaben">
-                <div className="space-y-1.5 mt-0">
+                <div className="space-y-4 mt-6">
                   {allExpenseItems.length === 0 && (
                     <p className="text-white">Noch keine Ausgaben vorhanden.</p>
                   )}
 
                   {allExpenseItems.map((item, index) => (
-                    <div key={index} className="bg-white/[0.045] border border-white/10 p-5 rounded-2xl flex justify-between items-center">
+                    <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-white">{item.name}</p>
-                        <p className="text-white/55 text-sm">{item.category}</p>
+                        <p className="font-bold text-black">{item.name}</p>
+                        <p className="text-black text-sm">{item.category}</p>
                       </div>
 
                       <p className="text-red-400 font-black">
@@ -2529,13 +2303,13 @@ ${smartTip}`;
               </Panel>
             </div>
 
-            <div className={financeSection === "upload" ? "block pt-6" : "hidden"}>
+            <div className={financeSection === "upload" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Kontoauszüge & Uploads">
-                <p className="text-white mt-3">
+                <p className="text-white mt-4">
                   Lade deine Kontoauszüge als PDF oder CSV hoch.
                 </p>
 
-                <label className="mt-2 flex items-center gap-1 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
+                <label className="mt-6 flex items-center gap-3 bg-emerald-400 text-black px-6 py-4 rounded-2xl font-black cursor-pointer w-fit">
                   <Upload size={20} />
                   Datei auswählen
 
@@ -2570,7 +2344,7 @@ ${smartTip}`;
                 </label>
 
                 {uploadedFile && (
-                  <p className="text-emerald-400 mt-3 font-bold break-words">
+                  <p className="text-emerald-400 mt-4 font-bold break-words">
                     Datei erkannt: {uploadedFile}
                   </p>
                 )}
@@ -2584,14 +2358,14 @@ ${smartTip}`;
                 {uploadedFile && (
                   <button
                     onClick={startAnalysis}
-                    className="mt-2 bg-cyan-400 text-white px-6 py-4 rounded-2xl font-black"
+                    className="mt-6 bg-cyan-400 text-white px-6 py-4 rounded-2xl font-black"
                   >
                     Analyse starten
                   </button>
                 )}
 
                 {analysisResult && (
-                  <div className="mt-3 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-white font-bold whitespace-pre-line">
+                  <div className="mt-5 bg-gray-100 border border-cyan-400/30 rounded-2xl p-5 text-white font-bold whitespace-pre-line">
                     {analysisResult}
                   </div>
                 )}
@@ -2599,15 +2373,15 @@ ${smartTip}`;
             </div>
 
             
-            <div className={financeSection === "manual" ? "block pt-6" : "hidden"}>
+            <div className={financeSection === "manual" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Ausgaben & Verträge">
-                <p className="text-white mt-3">
+                <p className="text-white mt-4">
                   Trage dein monatliches Einkommen und deine bisherigen Ausgaben manuell ein, falls nichts aus einer Datei erkannt wurde.
                 </p>
 
-                <div className="grid gap-1 mt-2">
+                <div className="grid gap-5 mt-6">
                   <div>
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <p className="text-sm font-bold text-gray-300">
                         Monatliches Einkommen
                       </p>
@@ -2626,7 +2400,7 @@ ${smartTip}`;
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-1 mb-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <p className="text-sm font-bold text-gray-300">
                         Bisherige Ausgaben
                       </p>
@@ -2646,8 +2420,8 @@ ${smartTip}`;
                 </div>
 
 
-                <div className="mt-2 rounded-[28px] border border-gray-200 bg-gray-100 p-5">
-                  <h3 className="text-xl font-black text-black">
+                <div className="mt-8 rounded-[28px] border border-gray-200 bg-gray-100 p-5">
+                  <h3 className="text-2xl font-black text-black">
                     Eigene Ausgaben
                   </h3>
 
@@ -2655,7 +2429,7 @@ ${smartTip}`;
                     Trage regelmäßige oder einmalige Kosten ein, z.B. Handy, Versicherungen, Miete oder Abos.
                   </p>
 
-                  <div className="grid gap-4 mt-3">
+                  <div className="grid gap-4 mt-5">
                     <input
                       value={manualExpenseName}
                       onChange={(e) => {
@@ -2673,7 +2447,7 @@ ${smartTip}`;
 
                     {detectSmartContract(manualExpenseName) && (
                       <div className="rounded-2xl bg-emerald-400/15 border border-emerald-400/30 p-4">
-                        <p className="text-white font-black">
+                        <p className="text-black font-black">
                           AI Erkennung
                         </p>
                         <p className="text-black mt-1">
@@ -2728,7 +2502,7 @@ ${smartTip}`;
                       <option value="einmalig">Einmalig</option>
                     </select>
 
-                    <label className="flex items-center gap-1 text-black font-bold">
+                    <label className="flex items-center gap-3 text-black font-bold">
                       <input
                         type="checkbox"
                         checked={manualExpenseRecurring}
@@ -2750,30 +2524,30 @@ ${smartTip}`;
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-1 mt-3">
+                  <div className="grid grid-cols-2 gap-3 mt-5">
                     <div className="rounded-2xl bg-white p-4 border border-gray-200">
                       <p className="text-black font-bold">Eigene Ausgaben</p>
-                      <p className="text-xl font-black text-red-400 mt-2">
+                      <p className="text-2xl font-black text-red-400 mt-2">
                         {manualExpenseTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                       </p>
                     </div>
 
                     <div className="rounded-2xl bg-white p-4 border border-gray-200">
                       <p className="text-black font-bold">Fixkostenquote</p>
-                      <p className="text-xl font-black text-cyan-400 mt-2">
+                      <p className="text-2xl font-black text-cyan-400 mt-2">
                         {fixedCostRatio}%
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-3 rounded-2xl bg-white border border-gray-200 p-4">
+                  <div className="mt-5 rounded-2xl bg-white border border-gray-200 p-4">
                     <p className="font-black text-black">AI Einschätzung</p>
                     <p className="text-black mt-2">
                       {manualExpenseInsight}
                     </p>
                   </div>
 
-                  <div className="space-y-1 mt-3">
+                  <div className="space-y-3 mt-5">
                     {manualExpenses.length === 0 && (
                       <p className="text-black">
                         Noch keine eigenen Ausgaben eingetragen.
@@ -2781,7 +2555,7 @@ ${smartTip}`;
                     )}
 
                     {manualExpenses.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-1 rounded-2xl bg-white border border-gray-200 p-4">
+                      <div key={item.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white border border-gray-200 p-4">
                         <div>
                           <p className="font-black text-black">{item.name}</p>
                           <p className="text-sm text-black">
@@ -2807,19 +2581,41 @@ ${smartTip}`;
                   </div>
                 </div>
 
+                <button
+                  type="button"
+                  onClick={() => {
+                    const income = Number(incomeInput);
+                    const expenses = Number(expenseInput);
 
+                    setMonthlyIncome(!isNaN(income) && income > 0 ? income : 0);
+                    setSpentThisMonth(!isNaN(expenses) && expenses > 0 ? expenses : 0);
+
+                    if ((!isNaN(income) && income > 0) || (!isNaN(expenses) && expenses > 0)) {
+                      setTransactions([
+                        ...(income > 0 ? [{ name: "Manuelles Einkommen", amount: income, category: "Einkommen" }] : []),
+                        ...(expenses > 0 ? [{ name: "Manuelle Ausgaben", amount: -expenses, category: "Ausgaben" }] : [])
+                      ]);
+
+                      setSavingScore(income > 0 ? Math.max(0, Math.min(100, Math.round(((income - expenses) / income) * 100))) : 0);
+                      setManualSaved(true);
+                    }
+                  }}
+                  className="w-full mt-6 bg-emerald-400 text-black rounded-3xl p-4 font-black active:scale-[0.98] transition-all duration-300"
+                >
+                  Daten speichern
+                </button>
               </Panel>
             </div>
 
-            <div className={financeSection === "pdf" ? "block pt-6" : "hidden"}>
+            <div className={financeSection === "pdf" ? "block pt-28" : "hidden"}>
               <Panel isLightMode={isLightMode} title="PDF-Report">
-                <p className="text-white mt-3">
+                <p className="text-white mt-4">
                   Erstelle einen professionellen Finanzreport.
                 </p>
 
                 <button
                   onClick={createPdf}
-                  className="mt-2 bg-white text-white px-6 py-4 rounded-2xl font-black"
+                  className="mt-6 bg-white text-white px-6 py-4 rounded-2xl font-black"
                 >
                   PDF erstellen
                 </button>
@@ -2842,7 +2638,7 @@ ${smartTip}`;
               Schritt {introStep + 1} von 7
             </p>
 
-            <h2 className="text-3xl font-black text-white leading-tight mt-6">
+            <h2 className="text-3xl font-black text-white leading-tight">
               {[
                 "Willkommen bei SaveWise AI",
                 "Startseite",
@@ -2854,7 +2650,7 @@ ${smartTip}`;
               ][introStep]}
             </h2>
 
-            <p className="text-white mt-3 text-base leading-relaxed">
+            <p className="text-white mt-5 text-base leading-relaxed">
               {[
                 "Dein Finanzdashboard für Budget, Sparen und KI-gestützte Auswertung.",
                 "Hier siehst du deine wichtigsten Werte: Sparen, Score, Kategorie, Einkommen und Ausgaben.",
@@ -2866,9 +2662,9 @@ ${smartTip}`;
               ][introStep]}
             </p>
 
-            <div className="mt-2 rounded-3xl bg-white/5 border border-white/10 p-4">
+            <div className="mt-6 rounded-3xl bg-white/5 border border-white/10 p-4">
               {introStep === 0 && (
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="rounded-2xl bg-emerald-400/20 p-3">
                     <p className="text-xs text-emerald-300 font-black">SPAREN</p>
                     <p className="text-white font-black mt-2">155€</p>
@@ -2885,7 +2681,7 @@ ${smartTip}`;
               )}
 
               {introStep === 1 && (
-                <div className="grid grid-cols-2 gap-1 text-left">
+                <div className="grid grid-cols-2 gap-3 text-left">
                   <div className="rounded-2xl bg-white/10 p-4">
                     <p className="text-white font-black">Einkommen</p>
                     <p className="text-emerald-300 font-black mt-2">3.743€</p>
@@ -2898,7 +2694,7 @@ ${smartTip}`;
               )}
 
               {introStep === 2 && (
-                <div className="grid gap-1 text-left">
+                <div className="grid gap-3 text-left">
                   <div className="rounded-2xl bg-white/10 p-4">
                     <p className="text-white font-black">Smart Insights</p>
                     <p className="text-gray-300 text-sm mt-1">Empfehlungen & Trends</p>
@@ -2918,7 +2714,7 @@ ${smartTip}`;
               )}
 
               {introStep === 4 && (
-                <div className="grid gap-1 text-left">
+                <div className="grid gap-3 text-left">
                   <div className="rounded-2xl bg-white/10 p-4">
                     <p className="text-white font-black">Kontoauszüge & Uploads</p>
                     <p className="text-gray-300 text-sm mt-1">PDF, CSV oder Screenshot</p>
@@ -2932,7 +2728,7 @@ ${smartTip}`;
 
               {introStep === 5 && (
                 <div className="rounded-2xl bg-white/10 p-4 text-left">
-                  <p className="text-white font-black mt-6">Sparziel Urlaub</p>
+                  <p className="text-white font-black">Sparziel Urlaub</p>
                   <div className="mt-3 h-3 rounded-full bg-white/10 overflow-hidden">
                     <div className="h-full w-[35%] bg-emerald-400 rounded-full" />
                   </div>
@@ -2941,7 +2737,7 @@ ${smartTip}`;
               )}
 
               {introStep === 6 && (
-                <div className="grid gap-1 text-left">
+                <div className="grid gap-3 text-left">
                   <div className="rounded-2xl bg-white/10 p-4">
                     <p className="text-white font-black">Modus wechseln</p>
                   </div>
@@ -2955,7 +2751,7 @@ ${smartTip}`;
               )}
             </div>
 
-            <div className="flex justify-center gap-1 mt-7">
+            <div className="flex justify-center gap-2 mt-7">
               {[0,1,2,3,4,5,6].map((i) => (
                 <div
                   key={i}
@@ -2967,7 +2763,7 @@ ${smartTip}`;
               ))}
             </div>
 
-            <div className="flex gap-1 mt-2">
+            <div className="flex gap-3 mt-8">
               <button
                 type="button"
                 onClick={() => {
@@ -2979,12 +2775,6 @@ ${smartTip}`;
               >
                 Überspringen
               </button>
-      <button
-        type="button"
-        className="flex h-12 w-12 items-center justify-center text-emerald-300"
-      >
-        ✨
-      </button>
 
               <button
                 type="button"
@@ -3017,9 +2807,9 @@ ${smartTip}`;
               Der Finanzscore kombiniert deine finanzielle Gesamtsituation mit deiner aktuellen Sparquote.
             </p>
 
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                <p className="text-white font-black">Score</p>
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                <p className="text-black font-black">Score</p>
                 <p className="mt-3 text-3xl font-black text-emerald-400">
                   {savingScore}/100
                 </p>
@@ -3028,8 +2818,8 @@ ${smartTip}`;
                 </p>
               </div>
 
-              <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                <p className="text-white font-black">Sparquote</p>
+              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                <p className="text-black font-black">Sparquote</p>
                 <p className="mt-3 text-3xl font-black text-purple-400">
                   {savingsRate}%
                 </p>
@@ -3039,7 +2829,7 @@ ${smartTip}`;
               </div>
             </div>
 
-            <div className="mt-2 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
+            <div className="mt-6 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
               <p className="font-black text-black">
                 Deine aktuelle Einschätzung
               </p>
@@ -3056,7 +2846,7 @@ ${smartTip}`;
             <button
               type="button"
               onClick={() => setShowScoreInfo(false)}
-              className="w-full mt-2 bg-black text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all"
+              className="w-full mt-6 bg-black text-white rounded-2xl p-4 font-black active:scale-[0.98] transition-all"
             >
               Verstanden
             </button>
@@ -3075,8 +2865,8 @@ ${smartTip}`;
         Verwalte deine App-Daten und Optionen.
       </p>
 
-      <div className="mt-2 rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-        <p className="text-white font-black">
+      <div className="mt-6 rounded-3xl bg-gray-100 border border-gray-200 p-5">
+        <p className="text-black font-black">
           Echte AI optional
         </p>
 
@@ -3091,11 +2881,11 @@ ${smartTip}`;
             localStorage.setItem("savewise_ai_api_key", e.target.value);
           }}
           placeholder="Optionaler OpenRouter API-Key"
-          className="w-full mt-3 bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
+          className="w-full mt-4 bg-white border border-gray-300 rounded-2xl p-4 text-black placeholder:text-gray-500 outline-none focus:border-emerald-400"
         />
       </div>
 
-      <div className="space-y-1.5 mt-0">
+      <div className="space-y-4 mt-8">
         <button
           type="button"
           onClick={resetAllData}
@@ -3156,6 +2946,15 @@ ${smartTip}`;
   </div>
 )}
 
+      <button
+        type="button"
+        onClick={() => setIsAiHubOpen((open) => !open)}
+        className="fixed right-5 bottom-28 z-[9999] w-20 h-20 rounded-[28px] bg-gradient-to-br from-emerald-300 via-emerald-500 to-cyan-400 shadow-[0_18px_60px_rgba(16,185,129,0.55)] border border-white/30 flex items-center justify-center text-4xl active:scale-95 transition-all animate-pulse"
+        aria-label="SaveWise AI öffnen"
+      >
+        <span className="drop-shadow-2xl">🤖</span>
+      </button>
+
       {isAiHubOpen && (
         <div className="fixed left-4 right-4 bottom-32 z-[9998] rounded-[34px] bg-[#101522]/95 border border-emerald-400/20 p-5 shadow-[0_0_80px_rgba(16,185,129,0.35)] backdrop-blur-xl">
 
@@ -3179,7 +2978,7 @@ ${smartTip}`;
             </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-1 mt-3">
+          <div className="grid grid-cols-2 gap-3 mt-5">
             {[
               "Wo kann ich sparen?",
               "Wie hoch sind meine Fixkosten?",
@@ -3197,7 +2996,7 @@ ${smartTip}`;
             ))}
           </div>
 
-          <div className="flex gap-1 mt-3">
+          <div className="flex gap-3 mt-4">
             <input
               value={chatMessage}
               onChange={(e) => setChatMessage(e.target.value)}
@@ -3214,7 +3013,7 @@ ${smartTip}`;
             </button>
           </div>
 
-          <div className="mt-3 rounded-2xl bg-black/20 border border-white/10 p-4 max-h-40 overflow-y-auto">
+          <div className="mt-4 rounded-2xl bg-black/20 border border-white/10 p-4 max-h-40 overflow-y-auto">
             <p className="text-emerald-300 text-xs font-black uppercase tracking-[0.18em]">
               Antwort
             </p>
@@ -3226,7 +3025,7 @@ ${smartTip}`;
         </div>
       )}
 
-      <div className="fixed left-1/2 bottom-3 z-[9999] -translate-x-1/2 rounded-full border border-white/10 bg-black/85 px-7 py-2.5 shadow-2xl backdrop-blur-2xl flex items-center gap-8">
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-black/85 border border-white/20 backdrop-blur-2xl rounded-full px-8 py-4 flex gap-8 shadow-2xl shadow-black/50 z-50">
         <NavButton active={activeTab === "home"} onClick={() => { setShowSettings(false); setActiveTab("home"); }}>
           <Home size={28} />
         </NavButton>
@@ -3242,15 +3041,6 @@ ${smartTip}`;
         >
           <Settings size={28} />
         </button>
-        <button
-          type="button"
-          onClick={() => setIsAiHubOpen((open) => !open)}
-          className="w-11 h-11 rounded-full flex items-center justify-center text-2xl active:scale-95 transition-all"
-          aria-label="SaveWise AI öffnen"
-        >
-          ✨
-        </button>
-
       </div>
     </main>
     </>
@@ -3264,7 +3054,63 @@ function Header(props: {
   onScoreClick?: () => void;
   onSavingsClick?: () => void;
 }) {
-  return null;
+  return (
+    <div className="relative overflow-hidden bg-white/5 border border-white/10 rounded-[36px] p-10 shadow-2xl shadow-emerald-500/10">
+      <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-400/20 rounded-full blur-3xl" />
+      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-cyan-400/20 rounded-full blur-3xl" />
+
+      <div className="relative flex flex-col items-center text-center">
+        <div className="relative mb-8">
+          <div className="absolute inset-0 rounded-[48px] bg-emerald-400/20 blur-2xl" />
+
+          <img
+            src="/savewise-icon.png"
+            alt="SaveWise Logo"
+            className="relative w-64 h-64 rounded-[46px] object-cover shadow-2xl shadow-emerald-400/30"
+          />
+        </div>
+
+        <div className="mt-6 w-full max-w-3xl rounded-[34px] bg-white/75 p-5 backdrop-blur-xl shadow-2xl shadow-emerald-400/10">
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={props.onSavingsClick}
+              className="min-h-[132px] rounded-[28px] border border-emerald-200 bg-emerald-100 px-2 py-4 flex flex-col items-center justify-center text-center active:scale-[0.98] transition-all"
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-emerald-400">
+                Sparen
+              </p>
+              <p className="mt-4 text-2xl font-black text-black leading-none">
+                {props.monthlySavings}€
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={props.onScoreClick}
+              className="min-h-[132px] rounded-[28px] border border-cyan-200 bg-cyan-100 px-2 py-4 flex flex-col items-center justify-center text-center active:scale-[0.98] transition-all"
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-cyan-400">
+                Score
+              </p>
+              <p className="mt-4 text-2xl font-black text-black leading-none">
+                {props.savingScore}/100
+              </p>
+            </button>
+
+            <div className="min-h-[132px] rounded-[28px] border border-fuchsia-200 bg-fuchsia-100 px-2 py-4 flex flex-col items-center justify-center text-center overflow-hidden">
+              <p className="text-[10px] font-black uppercase tracking-[0.04em] text-fuchsia-400">
+                Kategorie
+              </p>
+              <p className="mt-4 w-full text-center text-[15px] font-black text-black leading-tight whitespace-normal break-words">
+                {props.topCategory || "—"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function Card(props: {
@@ -3301,7 +3147,7 @@ function Card(props: {
           {props.title}
         </p>
 
-        <h2 className={`mt-3 text-xl font-black leading-tight ${props.color}`}>
+        <h2 className={`mt-4 text-xl font-black leading-tight ${props.color}`}>
           {props.value}
         </h2>
 
@@ -3324,7 +3170,7 @@ function Panel(props: {
     <div className="bg-white/5 border border-white/10 rounded-[34px] p-7 backdrop-blur-2xl shadow-2xl shadow-black/30">
       <h2
         className={
-          props.isLightMode ? "text-2xl font-black text-white" : "text-2xl font-black text-white"
+          props.isLightMode ? "text-4xl font-black text-white" : "text-4xl font-black text-white"
         }
       >
         {props.title}
@@ -3338,7 +3184,7 @@ function Mini(props: { title: string; value: string; color: string }) {
   return (
     <div className="bg-gray-100 rounded-2xl p-4 flex flex-col items-center justify-center text-center min-h-[118px] overflow-hidden">
       <p className="text-gray-300">{props.title}</p>
-      <p className={`text-base font-black mt-1 ${props.color}`}>{props.value}</p>
+      <p className={`text-xl font-black mt-2 ${props.color}`}>{props.value}</p>
     </div>
   );
 }
@@ -3366,7 +3212,7 @@ function BudgetNote(props: { color: "red" | "yellow" | "emerald"; title: string;
   };
 
   return (
-    <div className={`mt-2 border rounded-2xl p-4 ${styles[props.color]}`}>
+    <div className={`mt-6 border rounded-2xl p-4 ${styles[props.color]}`}>
       <p className="font-black">{props.title}</p>
       <p className="text-gray-300 mt-2">{props.text}</p>
     </div>

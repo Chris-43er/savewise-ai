@@ -835,27 +835,19 @@ ${smartTip}`;
   const onboardingSlides = [
     {
       title: "Willkommen bei SaveWise AI",
-      text: "Dein persönliches Finanzdashboard mit BudgetFlow, Sparscore, Verträgen, Upload-Analyse und smarter AI-Unterstützung."
+      text: "Dein intelligentes Premium-Finanzdashboard für Budget, Sparziele und KI-gestützte Finanzanalyse."
     },
     {
-      title: "BudgetFlow verstehen",
-      text: "Auf der Startseite siehst du sofort Einkommen, Ausgaben und verfügbares Geld als klare Balken. Tippe auf die Bereiche, um direkt zu den passenden Details zu springen."
+      title: "Behalte alles im Blick",
+      text: "Analysiere Einnahmen, Ausgaben, Sparquote, Monatsbudget und Finanztrend in einer modernen App-Ansicht."
     },
     {
-      title: "Daten erfassen",
-      text: "Lade Kontoauszüge als PDF oder CSV hoch oder trage Einkommen, Ausgaben und Verträge manuell ein. Änderungen werden automatisch in deiner Übersicht berücksichtigt."
+      title: "Setze smarte Sparziele",
+      text: "Lege Ziele fest, verfolge deinen Fortschritt und erkenne sofort, wie viel dir noch fehlt."
     },
     {
-      title: "Verträge & Fixkosten prüfen",
-      text: "SaveWise zeigt dir wiederkehrende Kosten, Fixkostenquote, Jahresbelastung und erkannte Verträge übersichtlich im App-Design."
-    },
-    {
-      title: "Ziele, Trends und Reports",
-      text: "Nutze Monatsvergleich, Sparziel, Finanztrend und PDF-Export, um deine Entwicklung zu verfolgen und Ergebnisse zu sichern."
-    },
-    {
-      title: "SaveWise AI nutzen",
-      text: "Über ✨ in der unteren Navigation kannst du Fragen zu deinen Finanzen stellen. Die AI nutzt deine lokalen Finanzwerte für Einschätzungen und Spartipps."
+      title: "KI unterstützt dich",
+      text: "SaveWise AI gibt dir Spartipps, erkennt Risiken und hilft dir, bessere finanzielle Entscheidungen zu treffen."
     }
   ];
 
@@ -1304,33 +1296,6 @@ ${smartTip}`;
           color: #06b6d4 !important;
         }
       `}</style>
-      
-      <style jsx global>{`
-        html,
-        body {
-          background: #050816 !important;
-          overscroll-behavior: none;
-        }
-
-        body {
-          min-height: 100svh;
-        }
-
-        main {
-          background: #050816 !important;
-        }
-      `}</style>
-
-      <style jsx global>{`
-        html, body {
-          background: #050816 !important;
-          overscroll-behavior: none;
-        }
-        main {
-          background: #050816 !important;
-        }
-      `}</style>
-
       {showAppSplash && (
         <div className="fixed inset-0 z-[99999] bg-[#050816] flex flex-col items-center justify-center px-10">
           <div className="relative w-44 h-44 flex items-center justify-center">
@@ -1380,19 +1345,6 @@ ${smartTip}`;
 >
       <div className="max-w-5xl mx-auto space-y-1">
         {homeSection === "overview" && activeTab === "home" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-
-        {activeTab === "home" && homeSection !== "overview" && (
-          <button
-            type="button"
-            onClick={() => {
-              setHomeSection("overview");
-              window.scrollTo({ top: 0, behavior: "auto" });
-            }}
-            className="mb-12 ml-2 inline-flex h-14 px-6 rounded-[24px] bg-[#1f1d24]/95 text-white font-black shadow-2xl backdrop-blur-xl items-center justify-center whitespace-nowrap active:scale-[0.98] transition-all"
-          >
-            ← Zurück
-          </button>
-        )}
 
         {activeTab === "home" && (
           <div className="space-y-1 mt-2">
@@ -1457,7 +1409,7 @@ ${smartTip}`;
             )}
 
 
-            {false && homeSection === "contracts" && (
+            {homeSection === "contracts" && (
               <div className="space-y-1 pt-4">
 
                 <Panel isLightMode={isLightMode} title="Verträge & Budget">
@@ -1609,7 +1561,7 @@ ${smartTip}`;
                 <button
                   type="button"
                   onClick={askAI}
-                  className="fixed top-[104px] left-5 z-[9999] h-14 px-6 rounded-[24px] bg-[#1f1d24]/95 text-white font-black shadow-2xl backdrop-blur-xl flex items-center justify-center whitespace-nowrap active:scale-[0.98] transition-all"
+                  className="fixed top-[104px] left-5 z-[9999] h-11 px-5 rounded-[22px] bg-[#1f1f24]/95 text-white font-black shadow-2xl backdrop-blur-xl flex items-center justify-center whitespace-nowrap fixed h-12 rounded-[24px] bg-[#1f1d24]/95 text-white font-black shadow-2xl backdrop-blur-xl flex items-center justify-center whitespace-nowrap bg-emerald-400 text-black rounded-2xl font-black"
                 >
                   Fragen
                 </button>
@@ -1932,7 +1884,7 @@ ${smartTip}`;
 
 
             {false && (
-              <div className="space-y-1 pt-2">
+              <div className="space-y-1">
 
                 <button
                   type="button"
@@ -1946,8 +1898,8 @@ ${smartTip}`;
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Finanzstatus
                       </p>
 
@@ -1956,8 +1908,8 @@ ${smartTip}`;
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Budgetstatus
                       </p>
 
@@ -1966,8 +1918,8 @@ ${smartTip}`;
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">
                         Monatsprognose
                       </p>
 
@@ -2042,29 +1994,37 @@ ${smartTip}`;
 
 
             {homeSection === "contracts" && (
-              <div className="space-y-1 pt-20 pb-32">
-<Panel isLightMode={isLightMode} title="Verträge & Fixkosten">
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setHomeSection("overview")}
+                  className="w-full min-h-[50px] rounded-[16px] border border-white/10 bg-white/[0.025] px-4 py-2 text-left backdrop-blur-xl shadow-sm shadow-black/10 active:scale-[0.98] transition-all"
+                >
+                  ← Zurück
+                </button>
+
+                <Panel isLightMode={isLightMode} title="Verträge & Fixkosten">
                   <p className="text-white mt-0">
                     Hier siehst du deine wiederkehrenden Kosten, Verträge und monatlichen Belastungen.
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 px-5 py-4">
-                      <p className="text-white font-black">Monatliche Fixkosten</p>
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 px-5 py-4">
+                      <p className="text-black font-black">Monatliche Fixkosten</p>
                       <p className="text-xs font-black text-red-400 mt-0">
                         {contractMonthlyTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">Jahresbelastung</p>
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">Jahresbelastung</p>
                       <p className="text-xs font-black text-yellow-400 mt-0">
                         {contractAnnualTotal.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
                       </p>
                     </div>
 
-                    <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                      <p className="text-white font-black">Fixkostenquote</p>
+                    <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                      <p className="text-black font-black">Fixkostenquote</p>
                       <p className="text-xs font-black text-cyan-400 mt-0">
                         {contractRatio}%
                       </p>
@@ -2072,8 +2032,8 @@ ${smartTip}`;
                   </div>
 
                   <div className="mt-2 rounded-3xl bg-emerald-400/15 border border-emerald-400/30 p-5">
-                    <p className="font-black text-white">AI Bewertung</p>
-                    <p className="text-white/75 mt-0 leading-relaxed">
+                    <p className="font-black text-black">AI Bewertung</p>
+                    <p className="text-black mt-0 leading-relaxed">
                       {contractInsight}
                     </p>
                   </div>
@@ -2086,7 +2046,7 @@ ${smartTip}`;
                     )}
 
                     {contractExpenses.map((item) => (
-                      <div key={item.id} className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
+                      <div key={item.id} className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <p className="font-black text-black">{item.name}</p>
@@ -2210,6 +2170,22 @@ ${smartTip}`;
 
             {homeSection !== "overview" && (
               <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHomeSection("overview");
+                    setTimeout(() => {
+                      const menu = document.getElementById("home-menu");
+                      if (menu) {
+                        const y = menu.getBoundingClientRect().top + window.scrollY - 10;
+                        window.scrollTo({ top: y, behavior: "auto" });
+                      }
+                    }, 50);
+                  }}
+                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
+                >
+                  <span className="text-white">← Zurück</span>
+                </button>
               </div>
             )}
 
@@ -2514,10 +2490,10 @@ ${smartTip}`;
                   )}
 
                   {allExpenseItems.map((item, index) => (
-                    <div key={index} className="bg-white/[0.045] border border-white/10 p-5 rounded-2xl flex justify-between items-center">
+                    <div key={index} className="bg-gray-100 p-5 rounded-2xl flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-white">{item.name}</p>
-                        <p className="text-white/55 text-sm">{item.category}</p>
+                        <p className="font-bold text-black">{item.name}</p>
+                        <p className="text-black text-sm">{item.category}</p>
                       </div>
 
                       <p className="text-red-400 font-black">
@@ -2673,7 +2649,7 @@ ${smartTip}`;
 
                     {detectSmartContract(manualExpenseName) && (
                       <div className="rounded-2xl bg-emerald-400/15 border border-emerald-400/30 p-4">
-                        <p className="text-white font-black">
+                        <p className="text-black font-black">
                           AI Erkennung
                         </p>
                         <p className="text-black mt-1">
@@ -3018,8 +2994,8 @@ ${smartTip}`;
             </p>
 
             <div className="grid grid-cols-2 gap-4 mt-2">
-              <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                <p className="text-white font-black">Score</p>
+              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                <p className="text-black font-black">Score</p>
                 <p className="mt-3 text-3xl font-black text-emerald-400">
                   {savingScore}/100
                 </p>
@@ -3028,8 +3004,8 @@ ${smartTip}`;
                 </p>
               </div>
 
-              <div className="rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-                <p className="text-white font-black">Sparquote</p>
+              <div className="rounded-3xl bg-gray-100 border border-gray-200 p-5">
+                <p className="text-black font-black">Sparquote</p>
                 <p className="mt-3 text-3xl font-black text-purple-400">
                   {savingsRate}%
                 </p>
@@ -3075,8 +3051,8 @@ ${smartTip}`;
         Verwalte deine App-Daten und Optionen.
       </p>
 
-      <div className="mt-2 rounded-3xl bg-white/[0.045] border border-white/10 p-5">
-        <p className="text-white font-black">
+      <div className="mt-2 rounded-3xl bg-gray-100 border border-gray-200 p-5">
+        <p className="text-black font-black">
           Echte AI optional
         </p>
 
