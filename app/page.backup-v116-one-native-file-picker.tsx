@@ -483,114 +483,105 @@ async function parsePdfFile(file: File): Promise<ImportResult> {
     disableWorker: false
   }).promise;
 
-  const pages: string[] = [];
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item: any) => String(item.str || "").trim()).filter(Boolean).join(" "));
+  function euro(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
   }
 
-  function parseAmount(raw: string) {
-    return Number(
-      raw
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .replace(/[^\d.-]/g, "")
-    );
-  }
-
-  function formatName(name: string) {
-    return name.replace(/\s+/g, " ").trim().slice(0, 90);
-  }
-
-  const fullText = pages.join(" ");
-
-  // DKB-Sicherheitslogik:
-  // Wenn offizielle Gesamtumsatzsummen vorhanden sind, nutzen wir diese als Quelle der Wahrheit.
-  const totalPage = pages.find((page) => page.includes("Gesamtumsatzsummen"));
-
-  if (totalPage) {
-    const amounts = totalPage.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-    const negativeAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value < 0);
-
-    const positiveAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value > 0);
-
-    const officialExpenses = Math.abs(negativeAmounts[negativeAmounts.length - 1] || 0);
-    const officialIncome = positiveAmounts[positiveAmounts.length - 1] || 0;
-
-    if (officialIncome > 0 || officialExpenses > 0) {
-      return {
-        income: Math.round(officialIncome * 100) / 100,
-        expenses: Math.round(officialExpenses * 100) / 100,
-        transactions: [
-          ...(officialIncome > 0
-            ? [{ name: "DKB Gesamteinnahmen", amount: officialIncome, category: "Einkommen" }]
-            : []),
-          ...(officialExpenses > 0
-            ? [{ name: "DKB Gesamtausgaben", amount: -officialExpenses, category: "Erkannte Ausgaben" }]
-            : [])
-        ],
-        source: file.name
-      };
-    }
-  }
-
-  // Fallback für PDFs ohne offizielle Summenzeile
   let income = 0;
   let expenses = 0;
+  let summaryIncome = 0;
+  let summaryExpenses = 0;
   const transactionsFromPdf: Transaction[] = [];
 
-  for (const pageText of pages) {
-    if (
-      pageText.includes("Entgeltinformation") ||
-      pageText.includes("Kontostand am") ||
-      pageText.includes("Dispositionskredit") ||
-      pageText.includes("Gesamtumsatzsummen")
-    ) {
-      continue;
-    }
+  function parseGermanAmount(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
+  }
 
-    const matches = pageText.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+  function extractSummaryTotals(pageText: string) {
+    const normalized = pageText.replace(/\s+/g, " ");
+    if (!normalized.toLowerCase().includes("gesamtumsatzsummen")) return;
 
-    for (const match of matches) {
-      const value = parseAmount(match);
-      if (!Number.isFinite(value) || value === 0 || Math.abs(value) > 20000) continue;
+    const sollMatch = normalized.match(/Soll[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    const habenMatch = normalized.match(/Haben[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
 
-      if (value < 0) {
-        expenses += Math.abs(value);
-        transactionsFromPdf.push({
-          name: "PDF Ausgabe",
-          amount: -Math.abs(value),
-          category: "Erkannte Ausgaben"
-        });
-      } else {
-        income += value;
-        transactionsFromPdf.push({
-          name: "PDF Einnahme",
-          amount: value,
-          category: "Einkommen"
-        });
+    if (sollMatch) summaryExpenses += parseGermanAmount(sollMatch[1]);
+    if (habenMatch) summaryIncome += parseGermanAmount(habenMatch[1]);
+
+    if (!sollMatch && !habenMatch) {
+      const values = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+      if (values.length >= 2) {
+        summaryExpenses += parseGermanAmount(values[0]);
+        summaryIncome += parseGermanAmount(values[1]);
       }
     }
   }
 
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+
+    const pageText = content.items.map((item: any) => item.str).join(" ");
+
+    if (
+      pageText.includes("Entgeltinformation") ||
+      pageText.includes("Gesamtumsatzsummen") ||
+      pageText.includes("Kontostand am") && pageText.includes("Gesamtumsatzsummen")
+    ) {
+      continue;
+    }
+
+    let lastDescription = "";
+
+    for (const item of content.items as any[]) {
+      const raw = String(item.str || "").trim();
+
+      if (!raw) continue;
+
+      if (/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) {
+        const value = euro(raw);
+
+        if (value === 0 || value > 10000) continue;
+
+        const cleanName = lastDescription || (raw.startsWith("-") ? "PDF Ausgabe" : "PDF Einnahme");
+
+        if (raw.startsWith("-")) {
+          expenses += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: -value,
+            category: detectCategory(cleanName)
+          });
+        } else {
+          income += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: value,
+            category: "Einkommen"
+          });
+        }
+
+        lastDescription = "";
+      } else if (
+        !raw.match(/^\d{2}\.\d{2}\.\d{4}$/) &&
+        !raw.toLowerCase().includes("betrag soll") &&
+        !raw.toLowerCase().includes("betrag haben") &&
+        !raw.toLowerCase().includes("datum erläuterung")
+      ) {
+        lastDescription = raw.length > 80 ? raw.slice(0, 80) : raw;
+      }
+    }
+  }
+
+  const finalIncome = summaryIncome > 0 ? summaryIncome : income;
+  const finalExpenses = summaryExpenses > 0 ? summaryExpenses : expenses;
+
   return {
-    income: Math.round(income * 100) / 100,
-    expenses: Math.round(expenses * 100) / 100,
-    transactions: transactionsFromPdf.map((item) => ({
-      ...item,
-      name: formatName(item.name)
-    })),
+    income: Math.round(finalIncome * 100) / 100,
+    expenses: Math.round(finalExpenses * 100) / 100,
+    transactions: transactionsFromPdf,
     source: file.name
   };
 }
-
 
 async function parseImageFile(file: File): Promise<ImportResult> {
   const Tesseract = await import("tesseract.js");
@@ -841,40 +832,31 @@ function parseCsvFile(file: File): Promise<ImportResult> {
 }
 
 
-
-function base64ToFile(base64: string, filename: string, mimeType: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return new File([bytes], filename, { type: mimeType || "application/octet-stream" });
-}
-
-async function pickImportFiles() {
+async function pickMultipleScreenshots() {
   try {
-    const { FilePicker } = await import("@capawesome/capacitor-file-picker");
+    const { Camera } = await import("@capacitor/camera");
 
-    const result = await FilePicker.pickFiles({
-      types: ["image/png", "image/jpeg", "application/pdf", "text/csv", "application/vnd.ms-excel"],
-      limit: 0,
-      readData: true
+    const result = await Camera.pickImages({
+      quality: 90,
+      limit: 0
     });
 
     const pickedFiles: File[] = [];
 
-    for (let i = 0; i < result.files.length; i++) {
-      const picked: any = result.files[i];
-      const name = picked.name || `import-${Date.now()}-${i}`;
-      const mimeType = picked.mimeType || "application/octet-stream";
+    for (let i = 0; i < result.photos.length; i++) {
+      const photo = result.photos[i];
+      if (!photo.webPath) continue;
 
-      if (picked.blob) {
-        pickedFiles.push(new File([picked.blob], name, { type: mimeType }));
-      } else if (picked.data) {
-        pickedFiles.push(base64ToFile(picked.data, name, mimeType));
-      }
+      const response = await fetch(photo.webPath);
+      const blob = await response.blob();
+
+      pickedFiles.push(
+        new File(
+          [blob],
+          photo.path?.split("/").pop() || `screenshot-${Date.now()}-${i}.jpg`,
+          { type: blob.type || "image/jpeg" }
+        )
+      );
     }
 
     if (pickedFiles.length === 0) return;
@@ -897,15 +879,15 @@ async function pickImportFiles() {
         merged.length === 1 ? merged[0].name : `${merged.length} Dateien ausgewählt`
       );
 
-      setUploadStatus(`${merged.length} Datei${merged.length === 1 ? "" : "en"} werden automatisch analysiert...`);
+      setUploadStatus(`${merged.length} Screenshot${merged.length === 1 ? "" : "s"} werden automatisch analysiert...`);
 
       setTimeout(() => analyzeFilesTogether(merged), 50);
 
       return merged;
     });
   } catch (error) {
-    console.error("Native Dateiauswahl Fehler:", error);
-    document.getElementById("savewise-import-input")?.click();
+    console.error("Mehrfachauswahl Fehler:", error);
+    setUploadStatus("Mehrfachauswahl konnte nicht geöffnet werden. Nutze alternativ Datei hinzufügen.");
   }
 }
 
@@ -2888,7 +2870,7 @@ ${smartTip}`;
             <div className={financeSection === "upload" ? "block pt-6 pb-56" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Kontoauszüge & Uploads">
                 <p className={isLightMode ? "text-black/70 mt-3" : "text-white mt-3"}>
-                  Wähle beliebig viele Kontoauszüge, Screenshots, PDFs oder CSV-Dateien aus. SaveWise analysiert alles automatisch gemeinsam.
+                  Füge Kontoauszüge als PDF, CSV oder Screenshot hinzu. Auf Android kannst du mehrere Dateien nacheinander antippen.
                 </p>
 
                 <input
@@ -2916,11 +2898,24 @@ ${smartTip}`;
                       });
 
                       setUploadedFile(
-                        merged.length === 1 ? merged[0].name : `${merged.length} Dateien ausgewählt`
+                        merged.length === 1
+                          ? merged[0].name
+                          : `${merged.length} Dateien ausgewählt`
                       );
 
-                      setUploadStatus(`${merged.length} Datei${merged.length === 1 ? "" : "en"} werden automatisch analysiert...`);
-                      setTimeout(() => analyzeFilesTogether(merged), 50);
+                      setUploadStatus(
+                        isImportCollectMode
+                          ? `${merged.length} Datei${merged.length === 1 ? "" : "en"} gesammelt. Wähle weitere Dateien oder tippe auf Auswahl fertig.`
+                          : `${merged.length} Datei${merged.length === 1 ? "" : "en"} werden automatisch analysiert...`
+                      );
+
+                      if (isImportCollectMode) {
+                        setTimeout(() => {
+                          document.getElementById("savewise-import-input")?.click();
+                        }, 350);
+                      } else {
+                        setTimeout(() => analyzeFilesTogether(merged), 50);
+                      }
 
                       return merged;
                     });
@@ -2929,13 +2924,26 @@ ${smartTip}`;
                   }}
                 />
 
-                <button
-                  type="button"
-                  onClick={pickImportFiles}
-                  className="mt-3 w-full rounded-2xl bg-emerald-400 px-5 py-4 font-black text-black active:scale-[0.98] transition-all"
-                >
-                  Dateien hinzufügen
-                </button>
+                <div className="mt-3 grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsImportCollectMode(false);
+                      document.getElementById("savewise-import-input")?.click();
+                    }}
+                    className="rounded-2xl bg-emerald-400 px-5 py-4 font-black text-black active:scale-[0.98] transition-all"
+                  >
+                    Datei hinzufügen
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={pickMultipleScreenshots}
+                    className={isLightMode ? "rounded-2xl bg-white border border-gray-200 px-5 py-4 font-black text-black shadow-sm" : "rounded-2xl bg-white/10 border border-white/10 px-5 py-4 font-black text-white"}
+                  >
+                    Screenshots mehrfach auswählen
+                  </button>
+                </div>
 
                 {selectedImportFiles.length > 0 && (
                   <div className={isLightMode ? "mt-3 rounded-2xl bg-white border border-gray-200 p-3 shadow-sm" : "mt-3 rounded-2xl bg-white/[0.045] border border-white/10 p-3"}>
@@ -2988,9 +2996,24 @@ ${smartTip}`;
                       ))}
                     </div>
 
+                    {isImportCollectMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsImportCollectMode(false);
+                          setUploadStatus(`${selectedImportFiles.length} Datei${selectedImportFiles.length === 1 ? "" : "en"} werden gemeinsam analysiert...`);
+                          analyzeFilesTogether(selectedImportFiles);
+                        }}
+                        className="mt-3 w-full rounded-2xl bg-emerald-400 px-4 py-3 font-black text-black active:scale-[0.98] transition-all"
+                      >
+                        Auswahl fertig
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
+                        setIsImportCollectMode(false);
                         setSelectedImportFiles([]);
                         setUploadedFile("");
                         setUploadStatus("Auswahl geleert.");

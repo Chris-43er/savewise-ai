@@ -37,7 +37,6 @@ const [isLightMode, setIsLightMode] = useState(false);
 
   const [uploadedFile, setUploadedFile] = useState("");
   const [selectedImportFiles, setSelectedImportFiles] = useState<File[]>([]);
-  const [isImportCollectMode, setIsImportCollectMode] = useState(false);
   const [uploadStatus, setUploadStatus] = useState("");
   const [analysisResult, setAnalysisResult] = useState("");
 
@@ -354,23 +353,34 @@ const [smartNotifications, setSmartNotifications] = useState<string[]>([]);
   }
 
   function detectCategory(text: string) {
-  const value = (text || "").toLowerCase();
+    const value = text.toLowerCase();
 
-  if (value.includes("gehalt") || value.includes("lohn") || value.includes("rente") || value.includes("dataport")) return "Einkommen";
-  if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl") || value.includes("netto") || value.includes("kaufland")) return "Lebensmittel";
-  if (value.includes("netflix") || value.includes("spotify") || value.includes("disney") || value.includes("prime") || value.includes("dazn")) return "Streaming";
-  if (value.includes("telekom") || value.includes("vodafone") || value.includes("o2") || value.includes("1&1") || value.includes("telefon") || value.includes("internet")) return "Telefon & Internet";
-  if (value.includes("shell") || value.includes("aral") || value.includes("esso") || value.includes("bahn") || value.includes("db ") || value.includes("parking") || value.includes("diesel")) return "Mobilität";
-  if (value.includes("miete") || value.includes("strom") || value.includes("gas") || value.includes("stadtwerke") || value.includes("vattenfall") || value.includes("eon")) return "Wohnen & Energie";
-  if (value.includes("allianz") || value.includes("huk") || value.includes("axa") || value.includes("ergo") || value.includes("provinzial") || value.includes("hansemerkur") || value.includes("orag") || value.includes("rechtsschutz") || value.includes("versicherung")) return "Versicherungen";
-  if (value.includes("amtskasse") || value.includes("amt ") || value.includes("kreis ") || value.includes("stadt ") || value.includes("gemeinde") || value.includes("finanzamt")) return "Behörden & Gebühren";
-  if (value.includes("dkb") || value.includes("entgelt") || value.includes("gebühr")) return "Bankgebühren";
-  if (value.includes("amazon") || value.includes("zalando") || value.includes("klarna") || value.includes("paypal") || value.includes("ebay")) return "Shopping";
-  if (value.includes("apotheke") || value.includes("arzt") || value.includes("kranken") || value.includes("debeka")) return "Gesundheit";
-  if (value.includes("pizza") || value.includes("lieferando") || value.includes("restaurant") || value.includes("bäcker") || value.includes("cafe")) return "Freizeit & Essen";
+    if (value.includes("gehalt") || value.includes("lohn") || value.includes("rente") || value.includes("dataport")) return "Einkommen";
 
-  return "Sonstiges";
-}
+    if (value.includes("rewe") || value.includes("edeka") || value.includes("aldi") || value.includes("lidl") || value.includes("nahkauf") || value.includes("market")) return "Lebensmittel";
+
+    if (value.includes("amazon") || value.includes("zalando") || value.includes("klarna") || value.includes("aliexpress") || value.includes("pvh")) return "Shopping";
+
+    if (value.includes("netflix") || value.includes("spotify") || value.includes("disney") || value.includes("wow") || value.includes("telekom")) return "Streaming & Medien";
+
+    if (value.includes("team ts") || value.includes("shell") || value.includes("aral") || value.includes("parking") || value.includes("bahn") || value.includes("uber")) return "Mobilität";
+
+    if (value.includes("apotheke") || value.includes("debeka") || value.includes("kranken")) return "Gesundheit";
+
+    if (value.includes("bausparkasse") || value.includes("ib sh") || value.includes("targobank") || value.includes("barclays") || value.includes("mercedes-benz bank")) return "Kredite & Finanzierung";
+
+    if (value.includes("provinzial") || value.includes("hansemerkur") || value.includes("oerag")) return "Versicherungen";
+
+    if (value.includes("yippie") || value.includes("strom") || value.includes("gas") || value.includes("zweckverband") || value.includes("amt probstei") || value.includes("miete")) return "Wohnen & Fixkosten";
+
+    if (value.includes("sabrio") || value.includes("pizza") || value.includes("lieferando")) return "Freizeit & Essen";
+
+    if (value.includes("paypal")) return "PayPal / Online";
+
+    return "Sonstiges";
+  }
+
+
 
 type ImportResult = {
   income: number;
@@ -383,57 +393,22 @@ function applyImportResults(results: ImportResult[]) {
   const allTransactions = results.flatMap((result) => result.transactions);
   const income = Math.round(results.reduce((sum, result) => sum + result.income, 0) * 100) / 100;
   const expenses = Math.round(results.reduce((sum, result) => sum + result.expenses, 0) * 100) / 100;
-  const remaining = Math.round((income - expenses) * 100) / 100;
-  const savings = Math.max(0, Math.round(remaining));
+  const savings = Math.max(0, Math.round(income - expenses));
   const score =
     income > 0
-      ? Math.max(0, Math.min(100, Math.round((remaining / income) * 100)))
+      ? Math.max(0, Math.min(100, Math.round(((income - expenses) / income) * 100)))
       : 0;
 
-  const expenseTransactions = allTransactions.filter((item) => item.amount < 0);
+  const categoryTotals = allTransactions
+    .filter((item) => item.amount < 0)
+    .reduce((acc: Record<string, number>, item) => {
+      acc[item.category] = (acc[item.category] || 0) + Math.abs(item.amount);
+      return acc;
+    }, {});
 
-  const categoryTotals = expenseTransactions.reduce((acc: Record<string, number>, item) => {
-    const category = item.category || "Sonstiges";
-    acc[category] = (acc[category] || 0) + Math.abs(item.amount);
-    return acc;
-  }, {});
-
-  const sortedCategories = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]);
-  const rawTopCategory = sortedCategories[0]?.[0] || "";
   const topCategory =
-    rawTopCategory === "Sonstiges" || rawTopCategory === "Ausgaben" || rawTopCategory === "Erkannte Ausgaben"
-      ? "Erkannte Ausgaben"
-      : rawTopCategory || (allTransactions.length > 0 ? "Import" : "");
-
-  const topCategoryAmount = sortedCategories[0]?.[1] || 0;
-
-  const biggestExpense = expenseTransactions
-    .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))[0];
-
-  const savingsRate = income > 0 ? Math.max(0, Math.round((remaining / income) * 100)) : 0;
-
-  const riskLevel =
-    income > 0 && expenses > income
-      ? "hoch"
-      : savingsRate >= 50
-      ? "niedrig"
-      : savingsRate >= 20
-      ? "mittel"
-      : "erhöht";
-
-  const insight =
-    income <= 0
-      ? "Es wurden noch keine Einnahmen erkannt. Prüfe, ob der Kontoauszug vollständig ist."
-      : expenses > income
-      ? `Deine Ausgaben liegen ${(expenses - income).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ über deinem Einkommen.`
-      : `Du verfügst aktuell über ${remaining.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ Überschuss.`;
-
-  const recommendation =
-    expenses > income
-      ? "Prüfe zuerst große Einzelbuchungen und wiederkehrende Kosten."
-      : topCategoryAmount > 0
-      ? `Deine erkannten Ausgaben liegen bei ${topCategoryAmount.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€. Das wirkt im Verhältnis zu deinem Einkommen sehr stabil.`
-      : "Deine Finanzlage wirkt aktuell stabil.";
+    Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]?.[0] ||
+    (allTransactions.length > 0 ? "Import" : "");
 
   setMonthlyIncome(income);
   setIncomeInput(income > 0 ? income.toFixed(2) : "");
@@ -446,31 +421,15 @@ function applyImportResults(results: ImportResult[]) {
   setSavingScore(score);
   setTopCategory(topCategory);
 
-  setAnalysisResult(`📊 Automatische Finanzanalyse
+  setAnalysisResult(`📊 Gesamtanalyse abgeschlossen
 
-Einnahmen: ${income.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-Ausgaben: ${expenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-Übrig: ${remaining.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-Sparquote: ${savingsRate}%
-Finanzscore: ${score}/100
+• Dateien: ${results.length}
+• Buchungen: ${allTransactions.length}
+• Einnahmen: ${income.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+• Ausgaben: ${expenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
+• Übrig: ${(income - expenses).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
 
-Einschätzung:
-${insight}
-
-Empfehlung:
-${recommendation}`);
-
-  setHistory((old) => [
-    "Automatische Finanzanalyse nach Import durchgeführt",
-    ...old.slice(0, 4)
-  ]);
-
-  setTimeout(() => {
-    document.getElementById("smart-analysis-card")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start"
-    });
-  }, 180);
+💡 SaveWise hat alle ausgewählten Dateien gemeinsam ausgewertet.`);
 }
 
 async function parsePdfFile(file: File): Promise<ImportResult> {
@@ -483,114 +442,105 @@ async function parsePdfFile(file: File): Promise<ImportResult> {
     disableWorker: false
   }).promise;
 
-  const pages: string[] = [];
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item: any) => String(item.str || "").trim()).filter(Boolean).join(" "));
+  function euro(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
   }
 
-  function parseAmount(raw: string) {
-    return Number(
-      raw
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .replace(/[^\d.-]/g, "")
-    );
-  }
-
-  function formatName(name: string) {
-    return name.replace(/\s+/g, " ").trim().slice(0, 90);
-  }
-
-  const fullText = pages.join(" ");
-
-  // DKB-Sicherheitslogik:
-  // Wenn offizielle Gesamtumsatzsummen vorhanden sind, nutzen wir diese als Quelle der Wahrheit.
-  const totalPage = pages.find((page) => page.includes("Gesamtumsatzsummen"));
-
-  if (totalPage) {
-    const amounts = totalPage.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-    const negativeAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value < 0);
-
-    const positiveAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value > 0);
-
-    const officialExpenses = Math.abs(negativeAmounts[negativeAmounts.length - 1] || 0);
-    const officialIncome = positiveAmounts[positiveAmounts.length - 1] || 0;
-
-    if (officialIncome > 0 || officialExpenses > 0) {
-      return {
-        income: Math.round(officialIncome * 100) / 100,
-        expenses: Math.round(officialExpenses * 100) / 100,
-        transactions: [
-          ...(officialIncome > 0
-            ? [{ name: "DKB Gesamteinnahmen", amount: officialIncome, category: "Einkommen" }]
-            : []),
-          ...(officialExpenses > 0
-            ? [{ name: "DKB Gesamtausgaben", amount: -officialExpenses, category: "Erkannte Ausgaben" }]
-            : [])
-        ],
-        source: file.name
-      };
-    }
-  }
-
-  // Fallback für PDFs ohne offizielle Summenzeile
   let income = 0;
   let expenses = 0;
+  let summaryIncome = 0;
+  let summaryExpenses = 0;
   const transactionsFromPdf: Transaction[] = [];
 
-  for (const pageText of pages) {
-    if (
-      pageText.includes("Entgeltinformation") ||
-      pageText.includes("Kontostand am") ||
-      pageText.includes("Dispositionskredit") ||
-      pageText.includes("Gesamtumsatzsummen")
-    ) {
-      continue;
-    }
+  function parseGermanAmount(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
+  }
 
-    const matches = pageText.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+  function extractSummaryTotals(pageText: string) {
+    const normalized = pageText.replace(/\s+/g, " ");
+    if (!normalized.toLowerCase().includes("gesamtumsatzsummen")) return;
 
-    for (const match of matches) {
-      const value = parseAmount(match);
-      if (!Number.isFinite(value) || value === 0 || Math.abs(value) > 20000) continue;
+    const sollMatch = normalized.match(/Soll[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    const habenMatch = normalized.match(/Haben[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
 
-      if (value < 0) {
-        expenses += Math.abs(value);
-        transactionsFromPdf.push({
-          name: "PDF Ausgabe",
-          amount: -Math.abs(value),
-          category: "Erkannte Ausgaben"
-        });
-      } else {
-        income += value;
-        transactionsFromPdf.push({
-          name: "PDF Einnahme",
-          amount: value,
-          category: "Einkommen"
-        });
+    if (sollMatch) summaryExpenses += parseGermanAmount(sollMatch[1]);
+    if (habenMatch) summaryIncome += parseGermanAmount(habenMatch[1]);
+
+    if (!sollMatch && !habenMatch) {
+      const values = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+      if (values.length >= 2) {
+        summaryExpenses += parseGermanAmount(values[0]);
+        summaryIncome += parseGermanAmount(values[1]);
       }
     }
   }
 
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+
+    const pageText = content.items.map((item: any) => item.str).join(" ");
+
+    if (
+      pageText.includes("Entgeltinformation") ||
+      pageText.includes("Gesamtumsatzsummen") ||
+      pageText.includes("Kontostand am") && pageText.includes("Gesamtumsatzsummen")
+    ) {
+      continue;
+    }
+
+    let lastDescription = "";
+
+    for (const item of content.items as any[]) {
+      const raw = String(item.str || "").trim();
+
+      if (!raw) continue;
+
+      if (/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) {
+        const value = euro(raw);
+
+        if (value === 0 || value > 10000) continue;
+
+        const cleanName = lastDescription || (raw.startsWith("-") ? "PDF Ausgabe" : "PDF Einnahme");
+
+        if (raw.startsWith("-")) {
+          expenses += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: -value,
+            category: detectCategory(cleanName)
+          });
+        } else {
+          income += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: value,
+            category: "Einkommen"
+          });
+        }
+
+        lastDescription = "";
+      } else if (
+        !raw.match(/^\d{2}\.\d{2}\.\d{4}$/) &&
+        !raw.toLowerCase().includes("betrag soll") &&
+        !raw.toLowerCase().includes("betrag haben") &&
+        !raw.toLowerCase().includes("datum erläuterung")
+      ) {
+        lastDescription = raw.length > 80 ? raw.slice(0, 80) : raw;
+      }
+    }
+  }
+
+  const finalIncome = summaryIncome > 0 ? summaryIncome : income;
+  const finalExpenses = summaryExpenses > 0 ? summaryExpenses : expenses;
+
   return {
-    income: Math.round(income * 100) / 100,
-    expenses: Math.round(expenses * 100) / 100,
-    transactions: transactionsFromPdf.map((item) => ({
-      ...item,
-      name: formatName(item.name)
-    })),
+    income: Math.round(finalIncome * 100) / 100,
+    expenses: Math.round(finalExpenses * 100) / 100,
+    transactions: transactionsFromPdf,
     source: file.name
   };
 }
-
 
 async function parseImageFile(file: File): Promise<ImportResult> {
   const Tesseract = await import("tesseract.js");
@@ -782,7 +732,7 @@ async function parseImageFile(file: File): Promise<ImportResult> {
     ...expenseItems.map((item) => ({
       name: "Bild Ausgabe",
       amount: -item.value,
-      category: "Erkannte Ausgaben"
+      category: "Sonstiges"
     }))
   ];
 
@@ -839,76 +789,6 @@ function parseCsvFile(file: File): Promise<ImportResult> {
     });
   });
 }
-
-
-
-function base64ToFile(base64: string, filename: string, mimeType: string) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-
-  return new File([bytes], filename, { type: mimeType || "application/octet-stream" });
-}
-
-async function pickImportFiles() {
-  try {
-    const { FilePicker } = await import("@capawesome/capacitor-file-picker");
-
-    const result = await FilePicker.pickFiles({
-      types: ["image/png", "image/jpeg", "application/pdf", "text/csv", "application/vnd.ms-excel"],
-      limit: 0,
-      readData: true
-    });
-
-    const pickedFiles: File[] = [];
-
-    for (let i = 0; i < result.files.length; i++) {
-      const picked: any = result.files[i];
-      const name = picked.name || `import-${Date.now()}-${i}`;
-      const mimeType = picked.mimeType || "application/octet-stream";
-
-      if (picked.blob) {
-        pickedFiles.push(new File([picked.blob], name, { type: mimeType }));
-      } else if (picked.data) {
-        pickedFiles.push(base64ToFile(picked.data, name, mimeType));
-      }
-    }
-
-    if (pickedFiles.length === 0) return;
-
-    setSelectedImportFiles((current) => {
-      const merged = [...current];
-
-      pickedFiles.forEach((file) => {
-        const exists = merged.some(
-          (existing) =>
-            existing.name === file.name &&
-            existing.size === file.size &&
-            existing.lastModified === file.lastModified
-        );
-
-        if (!exists) merged.push(file);
-      });
-
-      setUploadedFile(
-        merged.length === 1 ? merged[0].name : `${merged.length} Dateien ausgewählt`
-      );
-
-      setUploadStatus(`${merged.length} Datei${merged.length === 1 ? "" : "en"} werden automatisch analysiert...`);
-
-      setTimeout(() => analyzeFilesTogether(merged), 50);
-
-      return merged;
-    });
-  } catch (error) {
-    console.error("Native Dateiauswahl Fehler:", error);
-    document.getElementById("savewise-import-input")?.click();
-  }
-}
-
 
 async function analyzeFilesTogether(files: File[]) {
   const results: ImportResult[] = [];
@@ -2107,7 +1987,7 @@ ${smartTip}`;
                               <div className="text-right">
                                 <p className={`${row.text} text-xl font-black`}>
                                   {row.value > 0
-                                    ? row.value.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "€"
+                                    ? row.value.toLocaleString("de-DE", { maximumFractionDigits: 0 }) + "€"
                                     : "—"}
                                 </p>
                                 <p className="text-white/35 text-xs font-bold">
@@ -2657,456 +2537,16 @@ ${smartTip}`;
       <input
         type="number"
         value={goalAmount || ""}
-        onChange={(e) => {
-          const cleanValue = e.target.value.replace(/^0+(?=\d)/, "");
-          setGoalAmount(Number(cleanValue) || 0);
-        }}
-        placeholder=""
-        className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none"
+        onChange={(e) => setGoalAmount(Number(e.target.value))}
+        placeholder="z.B. 5000"
+        className="w-full bg-gray-100 border border-gray-200 rounded-2xl p-4 text-black outline-none focus:border-emerald-400"
       />
     </div>
 
-    <div>
-      <p className="text-sm font-bold text-gray-300 mb-2">Gesparter Betrag</p>
-      <input
-        type="number"
-        value={savedAmount || ""}
-        onChange={(e) => {
-          const cleanValue = e.target.value.replace(/^0+(?=\d)/, "");
-          setSavedAmount(Number(cleanValue) || 0);
-        }}
-        placeholder=""
-        className="w-full bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 outline-none"
-      />
-    </div>
-  </div>
-
-  <p className="text-gray-600 mt-3">
-    Fortschritt: {savedAmount}€ von {goalAmount}€
-  </p>
-
-  <p className="text-emerald-400 font-black text-3xl mt-3">
-    Noch nötig: {Math.max(0, goalAmount - savedAmount)}€
-  </p>
-
-  <div className="w-full h-5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-    <div
-      className="h-full bg-cyan-400 rounded-full"
-      style={{
-        width:
-          goalAmount > 0
-              ? Math.min(100, (savedAmount / goalAmount) * 100) + "%"
-              : "0%"
-      }}
-    />
-  </div>
-</Panel>
-</div>
-              <div className={false ? "block" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Monatsbudget">
-                <div className="flex gap-1 mt-2">
-                  <input
-                    value={budgetInput}
-                    onChange={(e) => setBudgetInput(e.target.value)}
-                    placeholder="Budget"
-                    className="bg-gray-100 border border-gray-200 rounded-2xl px-4 py-3 w-full outline-none"
-                  />
-
-                  <button
-                    onClick={() => {
-                      const value = Number(budgetInput);
-                      if (!isNaN(value) && value > 0) {
-                        setMonthlyBudget(value);
-                        localStorage.setItem("savewise_budget", String(value));
-                      }
-                    }}
-                    className="bg-emerald-400 text-black px-5 rounded-2xl font-black"
-                  >
-                    Setzen
-                  </button>
-                </div>
-
-                <p className="text-white mt-2">Ausgabenlimit: {monthlyBudget}€</p>
-                <p className="text-white mt-2">Ausgegeben: {spentThisMonth}€</p>
-
-                <p className="text-emerald-400 font-black text-3xl mt-3">
-                  Vom Ausgabenlimit übrig: {(monthlyBudget - totalMonthlyExpenses).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                </p>
-
-                <div className="w-full h-5 bg-gray-100 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className={
-                      "h-full rounded-full " +
-                      (spentThisMonth / monthlyBudget > 0.9
-                        ? "bg-red-400"
-                        : spentThisMonth / monthlyBudget > 0.7
-                          ? "bg-yellow-400"
-                          : "bg-emerald-400")
-                    }
-                    style={{
-                      width: Math.min(100, (totalMonthlyExpenses / monthlyBudget) * 100) + "%"
-                    }}
-                  />
-                </div>
-
-                {spentThisMonth / monthlyBudget > 0.9 ? (
-                  <BudgetNote color="red" title="🚨 Budget fast erreicht" text="Du hast bereits mehr als 90% deines Monatsbudgets verbraucht." />
-                ) : spentThisMonth / monthlyBudget > 0.7 ? (
-                  <BudgetNote color="yellow" title="⚠️ Budget Hinweis" text="Du hast bereits über 70% deines Monatsbudgets genutzt." />
-                ) : (
-                  <BudgetNote color="emerald" title="✅ Budget im grünen Bereich" text="Deine Ausgaben liegen aktuell im sicheren Bereich." />
-                )}
-              </Panel>
-              </div>
-
-
+                              </Panel>
             </div>
 
             
-            <div className={false && homeSection === "trend" ? "block" : "hidden"}>
-            <Panel isLightMode={isLightMode} title="Finanztrend">
-              <div className="h-72 mt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { name: "Jan", ausgaben: 980, sparen: 420 },
-                      { name: "Feb", ausgaben: 1120, sparen: 360 },
-                      { name: "Mär", ausgaben: 870, sparen: 520 },
-                      { name: "Apr", ausgaben: totalMonthlyExpenses, sparen: Math.max(0, monthlyIncome - spentThisMonth) }
-                    ]}
-                  >
-                    <XAxis dataKey="name" />
-                    <Tooltip />
-                    <Bar dataKey="ausgaben" radius={[12, 12, 0, 0]} />
-                    <Bar dataKey="sparen" radius={[12, 12, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <p className="text-gray-600 mt-3">
-                Deine aktuelle Finanzentwicklung wird automatisch mit deinem Monatsbudget verglichen.
-              </p>
-            </Panel>
-            </div>
-
-            <div className={homeSection === "overview" ? "block" : "hidden"}>
-            
-            </div>
-          </div>
-        )}
-
-        {activeTab === "finance" && (
-          <div className="space-y-1 mt-2">
-
-            {financeSection === "menu" && <Header monthlySavings={monthlySavings} savingScore={savingScore} topCategory={topCategory} onScoreClick={() => setShowScoreInfo(true)} onSavingsClick={() => { setActiveTab("home"); setHomeSection("goal"); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-            {financeSection === "menu" && (
-              <>
-              <div className="grid gap-4">
-                  {[
-                    {
-                      key: "upload",
-                      label: "Kontoauszüge & Uploads",
-                      text: "Kontoauszüge als PDF oder CSV hochladen und analysieren"
-                    },
-                    {
-                      key: "manual",
-                      label: "Ausgaben & Verträge",
-                      text: "Einkommen und Ausgaben händisch eintragen"
-                    },
-                    {
-                      key: "transactions",
-                      label: "Alle Ausgaben",
-                      text: "Manuelle Ausgaben und erkannte Transaktionen anzeigen"
-                    },
-                    {
-                      key: "pdf",
-                      label: "Finanzexport",
-                      text: "Daten exportieren und Reports erstellen"
-                    }
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setFinanceSection(item.key)}
-                      className={
-                        "rounded-[28px] border p-6 text-left transition-all duration-300 active:scale-[0.98] " +
-                        (isLightMode
-                          ? "bg-white/90 text-black border-gray-200 shadow-xl shadow-black/10"
-                          : "bg-white/5 text-white border-white/10")
-                      }
-                    >
-                      <p className={isLightMode ? "text-xl font-black text-black" : "text-xl font-black text-white"}>{item.label}</p>
-                      <p className={isLightMode ? "mt-1 text-black" : "mt-1 text-gray-300"}>{item.text}</p>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {financeSection !== "menu" && (<div className="pt-24">
-              <div className="fixed top-6 left-0 right-0 z-[9999] px-6">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFinanceSection("menu");
-                    window.scrollTo({ top: 0, behavior: "auto" });
-                  }}
-                  className="bg-[#1f1f24] text-white px-6 py-4 rounded-[24px] font-black shadow-2xl active:scale-[0.98] transition-all duration-300"
-                >
-                  <span className="text-white">← Zurück</span>
-                </button>
-              </div>
-            </div>
-            )}
-
-
-            <div className={financeSection === "transactions" ? "block pt-6" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Alle Ausgaben">
-                <div className="space-y-1.5 mt-0">
-                  {allExpenseItems.length === 0 && (
-                    <p className="text-white">Noch keine Ausgaben vorhanden.</p>
-                  )}
-
-                  {allExpenseItems.map((item, index) => (
-                    <div key={index} className={(isLightMode ? "bg-white border border-gray-200 text-black shadow-sm " : "bg-white/[0.055] border border-white/10 text-white ") + "px-4 py-3 rounded-2xl flex justify-between items-center"}>
-                      <div>
-                        <p className={isLightMode ? "font-bold text-black" : "font-bold text-white"}>
-                          {item.name === "Bild Ausgabe" ? "Erkannte Ausgabe" : item.name === "Bild Einnahme" ? "Erkannte Einnahme" : item.name}
-                        </p>
-                        <p className={isLightMode ? "text-black/60 text-sm" : "text-white/55 text-sm"}>{item.category}</p>
-                      </div>
-
-                      <p className="text-red-400 font-black">
-                        {Math.abs(item.amount).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </Panel>
-            </div>
-
-            <div className={financeSection === "upload" ? "block pt-6 pb-56" : "hidden"}>
-              <Panel isLightMode={isLightMode} title="Kontoauszüge & Uploads">
-                <p className={isLightMode ? "text-black/70 mt-3" : "text-white mt-3"}>
-                  Wähle beliebig viele Kontoauszüge, Screenshots, PDFs oder CSV-Dateien aus. SaveWise analysiert alles automatisch gemeinsam.
-                </p>
-
-                <input
-                  id="savewise-import-input"
-                  type="file"
-                  multiple
-                  accept=".pdf,.csv,.png,.jpg,.jpeg"
-                  className="hidden"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || []);
-                    if (files.length === 0) return;
-
-                    setSelectedImportFiles((current) => {
-                      const merged = [...current];
-
-                      files.forEach((file) => {
-                        const exists = merged.some(
-                          (existing) =>
-                            existing.name === file.name &&
-                            existing.size === file.size &&
-                            existing.lastModified === file.lastModified
-                        );
-
-                        if (!exists) merged.push(file);
-                      });
-
-                      setUploadedFile(
-                        merged.length === 1 ? merged[0].name : `${merged.length} Dateien ausgewählt`
-                      );
-
-                      setUploadStatus(`${merged.length} Datei${merged.length === 1 ? "" : "en"} werden automatisch analysiert...`);
-                      setTimeout(() => analyzeFilesTogether(merged), 50);
-
-                      return merged;
-                    });
-
-                    e.target.value = "";
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={pickImportFiles}
-                  className="mt-3 w-full rounded-2xl bg-emerald-400 px-5 py-4 font-black text-black active:scale-[0.98] transition-all"
-                >
-                  Dateien hinzufügen
-                </button>
-
-                {selectedImportFiles.length > 0 && (
-                  <div className={isLightMode ? "mt-3 rounded-2xl bg-white border border-gray-200 p-3 shadow-sm" : "mt-3 rounded-2xl bg-white/[0.045] border border-white/10 p-3"}>
-                    <p className={isLightMode ? "text-xs font-black uppercase tracking-[0.18em] text-black/50" : "text-xs font-black uppercase tracking-[0.18em] text-white/45"}>
-                      Ausgewählte Dateien
-                    </p>
-
-                    <div className="mt-2 grid gap-2">
-                      {selectedImportFiles.map((file, index) => (
-                        <div key={file.name + file.size + file.lastModified} className="flex items-center justify-between gap-3">
-                          <p className={isLightMode ? "text-sm font-bold text-black truncate" : "text-sm font-bold text-white truncate"}>
-                            {file.name}
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedImportFiles((current) => {
-                                const next = current.filter((_, i) => i !== index);
-
-                                setUploadedFile(
-                                  next.length === 0
-                                    ? ""
-                                    : next.length === 1
-                                    ? next[0].name
-                                    : `${next.length} Dateien ausgewählt`
-                                );
-
-                                if (next.length > 0) {
-                                  setUploadStatus(`${next.length} Datei${next.length === 1 ? "" : "en"} werden automatisch neu analysiert...`);
-                                  setTimeout(() => analyzeFilesTogether(next), 50);
-                                } else {
-                                  setUploadStatus("Keine Datei ausgewählt.");
-                                  setAnalysisResult("");
-                                  setTransactions([]);
-                                  setMonthlyIncome(0);
-                                  setSpentThisMonth(0);
-                                  setIncomeInput("");
-                                  setExpenseInput("");
-                                }
-
-                                return next;
-                              });
-                            }}
-                            className="text-xs font-black text-red-400 underline underline-offset-4"
-                          >
-                            Entfernen
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedImportFiles([]);
-                        setUploadedFile("");
-                        setUploadStatus("Auswahl geleert.");
-                        setAnalysisResult("");
-                        setTransactions([]);
-                        setMonthlyIncome(0);
-                        setSpentThisMonth(0);
-                        setIncomeInput("");
-                        setExpenseInput("");
-                      }}
-                      className={isLightMode ? "mt-3 w-full rounded-2xl bg-gray-100 px-4 py-3 font-black text-black" : "mt-3 w-full rounded-2xl bg-white/10 px-4 py-3 font-black text-white"}
-                    >
-                      Auswahl leeren
-                    </button>
-                  </div>
-                )}
-
-                {uploadStatus && (
-                  <p className="text-cyan-400 mt-3 font-black">
-                    {uploadStatus}
-                  </p>
-                )}
-
-                {analysisResult && (() => {
-                  const importIncome = monthlyIncome || 0;
-                  const importExpenses = spentThisMonth || 0;
-                  const importRemaining = importIncome - importExpenses;
-                  const importSavingsRate =
-                    importIncome > 0
-                      ? Math.max(0, Math.round((importRemaining / importIncome) * 100))
-                      : 0;
-
-                  const aiTitle =
-                    importIncome <= 0
-                      ? "Einnahmen prüfen"
-                      : importExpenses > importIncome
-                      ? "Budget kritisch"
-                      : importSavingsRate >= 50
-                      ? "Sehr stabil"
-                      : importSavingsRate >= 20
-                      ? "Solide"
-                      : "Optimierbar";
-
-                  const aiText =
-                    importIncome <= 0
-                      ? "SaveWise konnte noch keine eindeutigen Einnahmen erkennen."
-                      : importExpenses > importIncome
-                      ? "Deine Ausgaben liegen über deinem Einkommen. Prüfe große Einzelbuchungen und Fixkosten."
-                      : `Du verfügst aktuell über ${importRemaining.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€ monatlichen Überschuss.`;
-
-                  return (
-                    <div
-                      id="smart-analysis-card"
-                      className={isLightMode ? "mt-3 rounded-[28px] bg-white border border-gray-200 p-5 text-black shadow-sm" : "mt-3 rounded-[28px] bg-white/[0.075] border border-white/10 p-5 text-white shadow-2xl"}
-                    >
-                      <p className={isLightMode ? "text-xs font-black uppercase tracking-[0.18em] text-black/50" : "text-xs font-black uppercase tracking-[0.18em] text-white/45"}>
-                        Automatische Finanzanalyse
-                      </p>
-
-                      <h3 className={isLightMode ? "mt-2 text-2xl font-black text-black" : "mt-2 text-2xl font-black text-white"}>
-                        {aiTitle}
-                      </h3>
-
-                      <div className="grid grid-cols-1 gap-2 mt-4">
-                        <div className={isLightMode ? "rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3" : "rounded-2xl bg-emerald-400/10 border border-emerald-400/20 px-4 py-3"}>
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-400">Einnahmen</p>
-                          <p className="text-2xl font-black text-emerald-400 mt-1">
-                            {importIncome.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-                        </div>
-
-                        <div className={isLightMode ? "rounded-2xl bg-red-50 border border-red-100 px-4 py-3" : "rounded-2xl bg-red-400/10 border border-red-400/20 px-4 py-3"}>
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-red-400">Ausgaben</p>
-                          <p className="text-2xl font-black text-red-400 mt-1">
-                            {importExpenses.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-                        </div>
-
-                        <div className={isLightMode ? "rounded-2xl bg-yellow-50 border border-yellow-100 px-4 py-3" : "rounded-2xl bg-yellow-400/10 border border-yellow-400/20 px-4 py-3"}>
-                          <p className="text-xs font-black uppercase tracking-[0.16em] text-yellow-400">Verfügbar</p>
-                          <p className="text-2xl font-black text-yellow-400 mt-1">
-                            {importRemaining.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}€
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between">
-                          <p className={isLightMode ? "font-black text-black" : "font-black text-white"}>Sparquote</p>
-                          <p className="font-black text-purple-400">{importSavingsRate}%</p>
-                        </div>
-                        <div className="mt-2 h-3 rounded-full bg-white/10 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-purple-400"
-                            style={{ width: `${Math.min(100, importSavingsRate)}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between rounded-2xl bg-white/[0.055] border border-white/10 px-4 py-3">
-                        <p className={isLightMode ? "font-black text-black" : "font-black text-white"}>Finanzscore</p>
-                        <p className="font-black text-emerald-400">{savingScore}/100</p>
-                      </div>
-
-                      <div className={isLightMode ? "mt-4 rounded-2xl bg-emerald-50 border border-emerald-200 p-4" : "mt-4 rounded-2xl bg-emerald-400/10 border border-emerald-400/25 p-4"}>
-                        <p className={isLightMode ? "font-black text-emerald-950" : "font-black text-white"}>💡 AI Insight</p>
-                        <p className={isLightMode ? "mt-2 text-emerald-950/70 leading-relaxed" : "mt-2 text-white/75 leading-relaxed"}>
-                          {aiText}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </Panel>
-            </div>
-
             <div className={financeSection === "manual" ? "block pt-6" : "hidden"}>
               <Panel isLightMode={isLightMode} title="Ausgaben & Verträge">
                 <p className="text-white mt-3">

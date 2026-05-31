@@ -483,114 +483,105 @@ async function parsePdfFile(file: File): Promise<ImportResult> {
     disableWorker: false
   }).promise;
 
-  const pages: string[] = [];
-
-  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum);
-    const content = await page.getTextContent();
-    pages.push(content.items.map((item: any) => String(item.str || "").trim()).filter(Boolean).join(" "));
+  function euro(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
   }
 
-  function parseAmount(raw: string) {
-    return Number(
-      raw
-        .replace(/\./g, "")
-        .replace(",", ".")
-        .replace(/[^\d.-]/g, "")
-    );
-  }
-
-  function formatName(name: string) {
-    return name.replace(/\s+/g, " ").trim().slice(0, 90);
-  }
-
-  const fullText = pages.join(" ");
-
-  // DKB-Sicherheitslogik:
-  // Wenn offizielle Gesamtumsatzsummen vorhanden sind, nutzen wir diese als Quelle der Wahrheit.
-  const totalPage = pages.find((page) => page.includes("Gesamtumsatzsummen"));
-
-  if (totalPage) {
-    const amounts = totalPage.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
-
-    const negativeAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value < 0);
-
-    const positiveAmounts = amounts
-      .map(parseAmount)
-      .filter((value) => Number.isFinite(value) && value > 0);
-
-    const officialExpenses = Math.abs(negativeAmounts[negativeAmounts.length - 1] || 0);
-    const officialIncome = positiveAmounts[positiveAmounts.length - 1] || 0;
-
-    if (officialIncome > 0 || officialExpenses > 0) {
-      return {
-        income: Math.round(officialIncome * 100) / 100,
-        expenses: Math.round(officialExpenses * 100) / 100,
-        transactions: [
-          ...(officialIncome > 0
-            ? [{ name: "DKB Gesamteinnahmen", amount: officialIncome, category: "Einkommen" }]
-            : []),
-          ...(officialExpenses > 0
-            ? [{ name: "DKB Gesamtausgaben", amount: -officialExpenses, category: "Erkannte Ausgaben" }]
-            : [])
-        ],
-        source: file.name
-      };
-    }
-  }
-
-  // Fallback für PDFs ohne offizielle Summenzeile
   let income = 0;
   let expenses = 0;
+  let summaryIncome = 0;
+  let summaryExpenses = 0;
   const transactionsFromPdf: Transaction[] = [];
 
-  for (const pageText of pages) {
-    if (
-      pageText.includes("Entgeltinformation") ||
-      pageText.includes("Kontostand am") ||
-      pageText.includes("Dispositionskredit") ||
-      pageText.includes("Gesamtumsatzsummen")
-    ) {
-      continue;
-    }
+  function parseGermanAmount(value: string) {
+    return Math.abs(Number(value.replace(/\./g, "").replace(",", ".").replace(/[^0-9.-]/g, "")));
+  }
 
-    const matches = pageText.match(/[+-]?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+  function extractSummaryTotals(pageText: string) {
+    const normalized = pageText.replace(/\s+/g, " ");
+    if (!normalized.toLowerCase().includes("gesamtumsatzsummen")) return;
 
-    for (const match of matches) {
-      const value = parseAmount(match);
-      if (!Number.isFinite(value) || value === 0 || Math.abs(value) > 20000) continue;
+    const sollMatch = normalized.match(/Soll[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
+    const habenMatch = normalized.match(/Haben[^0-9-]{0,80}(-?\d{1,3}(?:\.\d{3})*,\d{2})/i);
 
-      if (value < 0) {
-        expenses += Math.abs(value);
-        transactionsFromPdf.push({
-          name: "PDF Ausgabe",
-          amount: -Math.abs(value),
-          category: "Erkannte Ausgaben"
-        });
-      } else {
-        income += value;
-        transactionsFromPdf.push({
-          name: "PDF Einnahme",
-          amount: value,
-          category: "Einkommen"
-        });
+    if (sollMatch) summaryExpenses += parseGermanAmount(sollMatch[1]);
+    if (habenMatch) summaryIncome += parseGermanAmount(habenMatch[1]);
+
+    if (!sollMatch && !habenMatch) {
+      const values = normalized.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}/g) || [];
+      if (values.length >= 2) {
+        summaryExpenses += parseGermanAmount(values[0]);
+        summaryIncome += parseGermanAmount(values[1]);
       }
     }
   }
 
+  for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    const page = await pdf.getPage(pageNum);
+    const content = await page.getTextContent();
+
+    const pageText = content.items.map((item: any) => item.str).join(" ");
+
+    if (
+      pageText.includes("Entgeltinformation") ||
+      pageText.includes("Gesamtumsatzsummen") ||
+      pageText.includes("Kontostand am") && pageText.includes("Gesamtumsatzsummen")
+    ) {
+      continue;
+    }
+
+    let lastDescription = "";
+
+    for (const item of content.items as any[]) {
+      const raw = String(item.str || "").trim();
+
+      if (!raw) continue;
+
+      if (/^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(raw)) {
+        const value = euro(raw);
+
+        if (value === 0 || value > 10000) continue;
+
+        const cleanName = lastDescription || (raw.startsWith("-") ? "PDF Ausgabe" : "PDF Einnahme");
+
+        if (raw.startsWith("-")) {
+          expenses += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: -value,
+            category: detectCategory(cleanName)
+          });
+        } else {
+          income += value;
+          transactionsFromPdf.push({
+            name: cleanName,
+            amount: value,
+            category: "Einkommen"
+          });
+        }
+
+        lastDescription = "";
+      } else if (
+        !raw.match(/^\d{2}\.\d{2}\.\d{4}$/) &&
+        !raw.toLowerCase().includes("betrag soll") &&
+        !raw.toLowerCase().includes("betrag haben") &&
+        !raw.toLowerCase().includes("datum erläuterung")
+      ) {
+        lastDescription = raw.length > 80 ? raw.slice(0, 80) : raw;
+      }
+    }
+  }
+
+  const finalIncome = summaryIncome > 0 ? summaryIncome : income;
+  const finalExpenses = summaryExpenses > 0 ? summaryExpenses : expenses;
+
   return {
-    income: Math.round(income * 100) / 100,
-    expenses: Math.round(expenses * 100) / 100,
-    transactions: transactionsFromPdf.map((item) => ({
-      ...item,
-      name: formatName(item.name)
-    })),
+    income: Math.round(finalIncome * 100) / 100,
+    expenses: Math.round(finalExpenses * 100) / 100,
+    transactions: transactionsFromPdf,
     source: file.name
   };
 }
-
 
 async function parseImageFile(file: File): Promise<ImportResult> {
   const Tesseract = await import("tesseract.js");
